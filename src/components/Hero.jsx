@@ -2,12 +2,12 @@ import React from 'react';
 
 const Hero = () => {
   return (
-    <section className="text-center mb-4">
+    <section className="text-center pt-6 mb-4">
       <div className="mb-2">
         <img
           src="/images/inobrand-logo.png"
           alt="InoBrand Logo"
-          className="w-96 h-96 mx-auto object-contain"
+          className="w-[28rem] h-[28rem] mx-auto object-contain"
         />
       </div>
       <h1 className="text-6xl font-bold mb-4">

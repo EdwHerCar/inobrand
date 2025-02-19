@@ -22,32 +22,32 @@ const ServiceShowcase = () => {
 
   return (
     <div className="container mx-auto px-6 py-12">
-      <h2 className="text-4xl font-bold text-center mb-12 text-white">¡Listos para el lanzamiento!</h2>
-      <div className="flex flex-col md:flex-row items-center gap-12">
+      <h2 className="text-4xl font-bold text-center mb-12 text-light-text dark:text-white">¡Listos para el lanzamiento!</h2>
+      <div className="flex flex-col md:flex-row items-stretch gap-12">
         {/* Image container */}
         <div className="w-full md:w-1/2 flex justify-center">
-          <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition-transform duration-300">
+          <div className="w-full h-full max-w-sm rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition-transform duration-300">
             <img
               src="/images/wp.png"
               alt="InoBrand Services"
-              className="w-full h-auto"
+              className="w-full h-full object-cover"
             />
           </div>
         </div>
 
         {/* Services list container */}
-        <div className="w-full md:w-1/2">
-          <ul className="space-y-6">
+        <div className="w-full md:w-1/2 flex flex-col justify-between">
+          <ul className="space-y-8 h-full flex flex-col justify-between py-4">
             {services.map((service, index) => (
               <li
                 key={index}
-                className="transform hover:-translate-y-1 transition-transform duration-300"
+                className="transform hover:-translate-y-1 transition-transform duration-300 flex-1"
               >
-                <div className="flex items-start space-x-4">
+                <div className="flex items-start space-x-4 h-full">
                   <div className="flex-shrink-0 w-2 h-2 mt-3 rounded-full bg-gradient-to-r from-primary to-secondary"></div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-white mb-2">{service.title}</h3>
-                    <p className="text-dark-muted">{service.description}</p>
+                  <div className="flex flex-col justify-center h-full">
+                    <h3 className="text-2xl font-semibold text-light-text dark:text-white mb-3">{service.title}</h3>
+                    <p className="text-lg text-light-muted dark:text-dark-muted">{service.description}</p>
                   </div>
                 </div>
               </li>

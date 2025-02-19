@@ -5,22 +5,29 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    min-height: 100vh;
+    overflow-x: hidden;
   }
   body {
-    @apply bg-dark-bg text-dark-text;
-    background: linear-gradient(135deg, #121212 0%, #3A29F2 100%, #BD29F2 100%, #7D29F2 100%, #4971F5 100%, #F229DB 100%);
+    @apply bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text min-h-screen;
     background-attachment: fixed;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  #root {
+    @apply min-h-screen flex flex-col relative;
   }
 
   section {
-    @apply min-h-[60vh] flex flex-col justify-center items-center py-4;
+    @apply min-h-screen flex flex-col justify-center items-center py-8 px-4;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply text-dark-text;
+    @apply text-light-text dark:text-dark-text;
   }
 
   p {
-    @apply text-dark-muted;
+    @apply text-light-muted dark:text-dark-muted;
   }
 }
