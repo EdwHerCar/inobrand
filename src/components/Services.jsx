@@ -2,7 +2,7 @@ import React from 'react';
 
 const Services = () => {
   return (
-    <div className="md:grid md:grid-cols-7 md:grid-rows-9 gap-4 min-h-[800px] p-8 flex flex-col space-y-4 md:space-y-0">
+    <div className="md:grid md:grid-cols-7 md:grid-rows-9 gap-4 min-h-[800px] p-8 lg:p-16 xl:p-24 flex flex-col space-y-4 md:space-y-0">
       {/* Title Section */}
       <div className="md:col-span-3 md:row-span-3 md:col-start-3 md:row-start-4 p-8 rounded-2xl bg-gradient-to-br from-secondary to-highlight text-white transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl flex flex-col justify-center">
         <h2 className="text-3xl font-bold mb-4 text-white">Nuestros Servicios</h2>

@@ -6,6 +6,7 @@ import ServiceShowcase from './components/ServiceShowcase'
 import Services from './components/Services'
 import CTA from './components/CTA'
 import Pricing from './components/Pricing'
+import Contact from './components/Contact'
 import Footer from './components/Footer'
 import ParticlesBackground from './components/ParticlesBackground'
 import WhatsAppButton from './components/WhatsAppButton'
@@ -48,6 +49,7 @@ function App() {
               <Services />
               <CTA />
               <Pricing />
+              <Contact />
             </main>
             <Footer />
           </div>
