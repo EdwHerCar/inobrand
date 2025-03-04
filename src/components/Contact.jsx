@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Pagination, Navigation } from 'swiper/modules';
 import 'swiper/css';
@@ -7,6 +7,40 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
 const Showcase = () => {
+  const videoRefs = useRef([]);
+  const observerRefs = useRef([]);
+
+  useEffect(() => {
+    const handleSlideChange = () => {
+      videoRefs.current.forEach((video, index) => {
+        if (video) {
+          // Get the slide element
+          const slide = video.closest('.swiper-slide');
+          if (slide) {
+            // Check if the slide has the 'swiper-slide-active' class
+            const isActive = slide.classList.contains('swiper-slide-active');
+            video.muted = !isActive;
+          }
+        }
+      });
+    };
+
+    // Add event listener to Swiper instance
+    const swiperElement = document.querySelector('.swiper').swiper;
+    if (swiperElement) {
+      swiperElement.on('slideChange', handleSlideChange);
+      swiperElement.on('init', handleSlideChange);
+    }
+
+    return () => {
+      const swiperElement = document.querySelector('.swiper').swiper;
+      if (swiperElement) {
+        swiperElement.off('slideChange', handleSlideChange);
+        swiperElement.off('init', handleSlideChange);
+      }
+    };
+  }, []);
+
   const mockupVideos = [
     {
       id: 1,
@@ -79,17 +113,19 @@ const Showcase = () => {
           modules={[EffectCoverflow, Pagination, Navigation]}
           className="w-full py-12"
         >
-          {mockupVideos.map((item) => (
+          {mockupVideos.map((item, index) => (
             <SwiperSlide key={item.id} className="px-4">
               <div className="iphone-mockup max-w-[280px] mx-auto">
                 <div className="notch"></div>
                 <div className="screen">
                   <video
+                    ref={(el) => (videoRefs.current[index] = el)}
                     autoPlay
                     loop
                     muted
                     playsInline
                     className="w-full h-full object-cover rounded-[3rem]"
+                    controls
                   >
                     <source src={item.videoUrl} type="video/mp4" />
                   </video>
@@ -111,7 +147,6 @@ const Showcase = () => {
           padding-top: 177.78%;
           background: #1a1a1a;
           border-radius: 3rem;
-
           border: 6px solid #2d2d2d;
           margin: 2rem auto;
           overflow: hidden;
