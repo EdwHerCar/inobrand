@@ -55,22 +55,24 @@ const ServiceShowcase = () => {
         <div className="flex flex-col md:flex-row items-center gap-8">
           {/* Video mockup container */}
           <div className="w-full md:w-1/2 flex justify-center">
-            <div className="iphone-mockup w-full max-w-[360px] mx-auto rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition-transform duration-300" style={{ height: '260px' }}>
-              <div className="notch"></div>
-              <div className="screen h-full">
+            <div className="relative w-full max-w-[360px] mx-auto">
+              <div className="absolute top-[4%] left-[6%] right-[6%] bottom-[4%] rounded-[40px] overflow-hidden">
                 <video
                   ref={videoRef}
                   autoPlay
                   loop
                   muted
                   playsInline
-                  className="w-full h-full object-cover"
-                  controls
-                  style={{ height: '260px', objectFit: 'cover' }}
+                  className="w-full h-full object-cover object-center"
                 >
                   <source src="/videos/1.mov" type="video/mp4" />
                 </video>
               </div>
+              <img 
+                src="/images/i15.svg" 
+                alt="iPhone 15 mockup" 
+                className="w-full h-auto relative z-20"
+              />
             </div>
           </div>
 

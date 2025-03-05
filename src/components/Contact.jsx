@@ -9,6 +9,7 @@ import 'swiper/css/navigation';
 const Showcase = () => {
   const videoRefs = useRef([]);
   const observerRefs = useRef([]);
+  const mockupRef = useRef(null);
 
   useEffect(() => {
     const handleSlideChange = () => {
@@ -115,24 +116,24 @@ const Showcase = () => {
         >
           {mockupVideos.map((item, index) => (
             <SwiperSlide key={item.id} className="px-4">
-              <div className="iphone-mockup max-w-[280px] mx-auto">
-                <div className="notch"></div>
-                <div className="screen">
+              <div className="relative w-full max-w-[360px] mx-auto">
+                <div className="absolute top-[4%] left-[6%] right-[6%] bottom-[4%] rounded-[40px] overflow-hidden">
                   <video
                     ref={(el) => (videoRefs.current[index] = el)}
                     autoPlay
                     loop
                     muted
                     playsInline
-                    className="w-full h-full object-cover rounded-[3rem]"
-                    controls
+                    className="w-full h-full object-cover object-center"
                   >
                     <source src={item.videoUrl} type="video/mp4" />
                   </video>
                 </div>
-                <h3 className="text-xl font-semibold text-light-text dark:text-dark-text mt-4 text-center">
-                  {item.title}
-                </h3>
+                <img
+                  src="/images/i15.svg"
+                  alt="iPhone 15 Mockup"
+                  className="w-full h-auto relative z-20"
+                />
               </div>
             </SwiperSlide>
           ))}
@@ -140,38 +141,10 @@ const Showcase = () => {
       </div>
 
       <style jsx>{`
-        .iphone-mockup {
-          position: relative;
-          width: 100%;
-          max-width: 280px;
-          padding-top: 177.78%;
-          background: #1a1a1a;
-          border-radius: 3rem;
-          border: 6px solid #2d2d2d;
-          margin: 2rem auto;
-          overflow: hidden;
-        }
-
-        .notch {
-          position: absolute;
-          top: 0.5rem;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 30%;
-          height: 1rem;
-          background: #000;
-          border-radius: 0.75rem;
-          z-index: 2;
-        }
-
-        .screen {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          overflow: hidden;
-          border-radius: 2.5rem;
+        .swiper-slide {
+          display: flex;
+          justify-content: center;
+          align-items: center;
         }
 
         .swiper-slide {
