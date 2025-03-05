@@ -77,8 +77,8 @@ const ServiceShowcase = () => {
           </div>
 
           {/* Services list container */}
-          <div className="w-full md:w-1/2">
-            <ul className="space-y-4">
+          <div className="w-full md:w-1/2 flex flex-col justify-between h-[600px] py-4">
+            <ul className="space-y-24 py-8">
               {services.map((service, index) => (
                 <li
                   key={index}
