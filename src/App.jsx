@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
+import Slogan from './components/Slogan'
 import ServiceShowcase from './components/ServiceShowcase'
 import Services from './components/Services'
 import CTA from './components/CTA'
@@ -10,7 +11,12 @@ import Contact from './components/Contact'
 import Footer from './components/Footer'
 import ParticlesBackground from './components/ParticlesBackground'
 import WhatsAppButton from './components/WhatsAppButton'
+import Mission from './components/Mission'
+import Vision from './components/Vision'
+import PrivacyPolicy from './components/PrivacyPolicy'
+import AboutUs from './components/AboutUs'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
+import { WhatsAppButtonProvider } from './context/WhatsAppButtonContext'
 
 const ThemeToggle = () => {
   const { isDarkMode, toggleTheme } = useTheme();
@@ -36,25 +42,36 @@ const ThemeToggle = () => {
 function App() {
   return (
     <ThemeProvider>
-      <Router>
-        <div className="relative min-h-screen w-full overflow-x-hidden bg-light-bg dark:bg-dark-bg">
-          <ParticlesBackground />
-          <div className="relative z-10">
-            <ThemeToggle />
-            <Navbar />
-            <WhatsAppButton />
-            <main>
-              <Hero />
-              <ServiceShowcase />
-              <Services />
-              <CTA />
-              <Pricing />
-              <Contact />
-            </main>
-            <Footer />
+      <WhatsAppButtonProvider>
+        <Router>
+          <div className="relative min-h-screen w-full overflow-x-hidden bg-light-bg dark:bg-dark-bg">
+            <ParticlesBackground />
+            <div className="relative z-10">
+              <ThemeToggle />
+              <Navbar />
+              <WhatsAppButton />
+              <Routes>
+                <Route path="/" element={
+                  <main>
+                    <Hero />
+                    <Slogan />
+                    <ServiceShowcase />
+                    <Services />
+                    <CTA />
+                    <Pricing />
+                    <Contact />
+                    <Footer />
+                  </main>
+                } />
+                <Route path="/about-us" element={<AboutUs />} />
+                <Route path="/mission" element={<Mission />} />
+                <Route path="/vision" element={<Vision />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              </Routes>
+            </div>
           </div>
-        </div>
-      </Router>
+        </Router>
+      </WhatsAppButtonProvider>
     </ThemeProvider>
   );
 }

@@ -7,6 +7,11 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        heading: ['Azonix', 'sans-serif'],
+        body: ['Nunito', 'Roboto', 'sans-serif'],
+        sans: ['Nunito', 'Roboto', 'sans-serif'],
+      },
       colors: {
         primary: '#3A29F2',
         secondary: '#BD29F2',

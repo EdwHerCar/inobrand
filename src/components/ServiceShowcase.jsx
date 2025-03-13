@@ -1,36 +1,90 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useWhatsAppButton } from '../context/WhatsAppButtonContext';
 
 const ServiceShowcase = () => {
   const videoRef = useRef(null);
+  const sectionRef = useRef(null);
   const observerRef = useRef(null);
+  const { setIsServiceShowcaseVisible } = useWhatsAppButton();
+  const [isButtonFlashing, setIsButtonFlashing] = useState(false);
 
   useEffect(() => {
-    const options = {
+    // Video playback observer options
+    const videoOptions = {
       root: null,
       rootMargin: '0px',
       threshold: 0.5,
     };
+    
+    // Section visibility observer options
+    const sectionOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.3,
+    };
 
-    const handleIntersection = (entries) => {
+    // Handle video playback based on visibility
+    const handleVideoIntersection = (entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && videoRef.current) {
+          videoRef.current.play().catch(error => {
+            console.log('Autoplay failed:', error);
+            // If autoplay fails, try with muted
+            videoRef.current.muted = true;
+            videoRef.current.play().catch(innerError => {
+              console.log('Muted autoplay also failed:', innerError);
+            });
+          });
           videoRef.current.muted = false;
-        } else {
+        } else if (videoRef.current) {
+          videoRef.current.pause();
           videoRef.current.muted = true;
         }
       });
     };
+    
+    // Handle section visibility for WhatsApp button toggle
+    const handleSectionIntersection = (entries) => {
+      entries.forEach((entry) => {
+        setIsServiceShowcaseVisible(entry.isIntersecting);
+      });
+    };
 
-    observerRef.current = new IntersectionObserver(handleIntersection, options);
+    // Create observers
+    const videoObserver = new IntersectionObserver(handleVideoIntersection, videoOptions);
+    const sectionObserver = new IntersectionObserver(handleSectionIntersection, sectionOptions);
+    
+    // Store video observer reference for cleanup
+    observerRef.current = videoObserver;
 
+    // Observe video for playback control
     if (videoRef.current) {
-      observerRef.current.observe(videoRef.current);
+      videoRef.current.muted = true; // Initially muted to allow autoplay
+      videoObserver.observe(videoRef.current);
+    }
+    
+    // Observe section for WhatsApp button visibility
+    if (sectionRef.current) {
+      sectionObserver.observe(sectionRef.current);
     }
 
+    // Set up button flashing animation
+    const flashingInterval = setInterval(() => {
+      setIsButtonFlashing(prev => !prev);
+    }, 800);
+
     return () => {
+      // Cleanup both observers
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
+      sectionObserver.disconnect();
+      
+      // Reset WhatsApp button visibility when component unmounts
+      setIsServiceShowcaseVisible(false);
+      
+      // Clear flashing interval
+      clearInterval(flashingInterval);
     };
   }, []);
 
@@ -48,11 +102,15 @@ const ServiceShowcase = () => {
     description: 'Nos encargamos de hacerte visible, mientras tú te ocupas de la operación de tu negocio'
   }];
 
+  const handleWhatsAppClick = () => {
+    window.open('https://wa.me/2411984848', '_blank');
+  };
+
   return (
-    <div className="container mx-auto px-6 py-4 min-h-[600px] flex items-center">
+    <div ref={sectionRef} className="container mx-auto px-6 py-8 mt-16 min-h-[600px] flex items-center">
       <div className="w-full">
-        <h2 className="text-4xl font-bold text-center mb-8 text-light-text dark:text-white">¡Listos para el lanzamiento!</h2>
-        <div className="flex flex-col md:flex-row items-center gap-8">
+        <h2 className="text-5xl lg:text-6xl md:text-5xl sm:text-4xl font-bold text-center mb-16 text-light-text dark:text-white">¡Listos para el lanzamiento!</h2>
+        <div className="flex flex-col md:flex-row items-center gap-6">
           {/* Video mockup container */}
           <div className="w-full md:w-1/2 flex justify-center">
             <div className="relative w-full max-w-[360px] mx-auto">
@@ -63,9 +121,10 @@ const ServiceShowcase = () => {
                   loop
                   muted
                   playsInline
+                  preload="auto"
                   className="w-full h-full object-cover object-center"
                 >
-                  <source src="/videos/1.mov" type="video/mp4" />
+                  <source src="/videos/1.mp4" type="video/mp4" />
                 </video>
               </div>
               <img 
@@ -73,12 +132,21 @@ const ServiceShowcase = () => {
                 alt="iPhone 15 mockup" 
                 className="w-full h-auto relative z-20"
               />
+              
+              {/* WhatsApp button inside the mockup */}
+              <button
+                onClick={handleWhatsAppClick}
+                className={`absolute bottom-[10%] left-1/2 transform -translate-x-1/2 z-30 py-3 px-6 rounded-full ${isButtonFlashing ? 'bg-white text-red-600' : 'bg-red-600 text-white'} font-bold transition-colors duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 w-[80%] justify-center text-lg animate-pulse`}
+                aria-label="Click Aquí"
+              >
+                <span>¡Click Aquí!</span>
+              </button>
             </div>
           </div>
 
           {/* Services list container */}
-          <div className="w-full md:w-1/2 flex flex-col justify-between h-[600px] py-4">
-            <ul className="space-y-24 py-8">
+          <div className="w-full md:w-1/2 flex flex-col justify-start h-[500px]">
+            <ul className="space-y-12 pt-0">
               {services.map((service, index) => (
                 <li
                   key={index}
@@ -87,8 +155,8 @@ const ServiceShowcase = () => {
                   <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0 w-2 h-2 mt-2 rounded-full bg-gradient-to-r from-primary to-secondary"></div>
                     <div className="flex flex-col">
-                      <h3 className="text-lg font-semibold text-light-text dark:text-white mb-1">{service.title}</h3>
-                      <p className="text-sm text-light-muted dark:text-dark-muted">{service.description}</p>
+                      <h3 className="text-2xl lg:text-3xl md:text-2xl sm:text-xl font-semibold text-light-text dark:text-white mb-2">{service.title}</h3>
+                      <p className="text-lg lg:text-xl md:text-lg sm:text-base text-light-muted dark:text-dark-muted">{service.description}</p>
                     </div>
                   </div>
                 </li>

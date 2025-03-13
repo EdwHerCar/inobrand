@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
@@ -17,10 +18,10 @@ const Footer = () => {
 
           {/* Navigation Links */}
           <div className="grid grid-cols-1 gap-4 text-center md:text-left">
-            <a href="#" className="text-light-text dark:text-white hover:text-primary transition-colors">¿Quiénes somos?</a>
-            <a href="#" className="text-light-text dark:text-white hover:text-primary transition-colors">Misión</a>
-            <a href="#" className="text-light-text dark:text-white hover:text-primary transition-colors">Visión</a>
-            <a href="#" className="text-light-text dark:text-white hover:text-primary transition-colors">Política de privacidad</a>
+            <Link to="/about-us" className="text-light-text dark:text-white hover:text-primary transition-colors">¿Quiénes somos?</Link>
+            <Link to="/mission" className="text-light-text dark:text-white hover:text-primary transition-colors">Misión</Link>
+            <Link to="/vision" className="text-light-text dark:text-white hover:text-primary transition-colors">Visión</Link>
+            <Link to="/privacy-policy" className="text-light-text dark:text-white hover:text-primary transition-colors">Política de privacidad</Link>
           </div>
 
           {/* Contact Information */}

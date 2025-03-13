@@ -1,9 +1,20 @@
 import React from 'react';
+import { useWhatsAppButton } from '../context/WhatsAppButtonContext';
 
 const WhatsAppButton = () => {
+  const {
+    isServiceShowcaseVisible,
+    isSloganVisible,
+    isHeroVisible,
+    isContactVisible
+  } = useWhatsAppButton();
+  
   const handleWhatsAppClick = () => {
-    window.open('https://wa.me/573023453069', '_blank');
+    window.open('https://wa.me/2411984848', '_blank');
   };
+
+  // Hide button if any of the specified sections are visible
+  if (isServiceShowcaseVisible || isSloganVisible || isHeroVisible || isContactVisible) return null;
 
   return (
     <button

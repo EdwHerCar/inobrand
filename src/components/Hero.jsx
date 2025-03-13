@@ -1,27 +1,99 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
+import { useWhatsAppButton } from '../context/WhatsAppButtonContext';
 
 const Hero = () => {
+  const [scrollOpacity, setScrollOpacity] = useState(0);
+  const { isDarkMode } = useTheme();
+  const { setIsHeroVisible } = useWhatsAppButton();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const element = document.getElementById('hero-section');
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        const elementVisible = rect.top < windowHeight && rect.bottom >= 0;
+
+        if (elementVisible) {
+          const scrollPercentage = 1 - (rect.top / windowHeight);
+          setScrollOpacity(Math.min(Math.max(scrollPercentage, 0), 1));
+        }
+      }
+    };
+
+    // Set up intersection observer for WhatsApp button visibility
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsHeroVisible(entry.isIntersecting);
+      },
+      { threshold: 0.3 }
+    );
+
+    const heroSection = document.getElementById('hero-section');
+    if (heroSection) {
+      observer.observe(heroSection);
+    }
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial check
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
+      setIsHeroVisible(false);
+    };
+  }, [setIsHeroVisible]);
+
+  const textStyle = {
+    opacity: scrollOpacity,
+    transition: 'opacity 0.3s ease-out'
+  };
+
+  const handleScrollToSlogan = () => {
+    const sloganSection = document.getElementById('slogan-section');
+    if (sloganSection) {
+      const start = window.pageYOffset;
+      const end = sloganSection.getBoundingClientRect().top + window.pageYOffset;
+      const duration = 3000; // 3 seconds
+      const startTime = performance.now();
+
+      function animate(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function for smooth animation
+        const easeInOutCubic = t => t < 0.5
+          ? 4 * t * t * t
+          : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+        const currentPosition = start + (end - start) * easeInOutCubic(progress);
+        window.scrollTo(0, currentPosition);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+  };
+
   return (
-    <section className="text-center pt-6 mb-4">
-      <div className="mb-2">
+    <section id="hero-section" className="text-center pt-6 mb-4">
+      <div className="mb-4 sm:mb-6">
         <img
           src="/images/inobrand-logo.png"
           alt="InoBrand Logo"
-          className="w-[28rem] h-[28rem] mx-auto object-contain"
+          className="w-[16rem] h-[16rem] mx-auto object-contain md:w-[32rem] md:h-[32rem] sm:w-[24rem] sm:h-[24rem]"
         />
+        <button
+          onClick={handleScrollToSlogan}
+          className={`mt-6 px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-full font-bold text-lg transition-all duration-300 shadow-lg ${isDarkMode ? 'hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'hover:shadow-[0_0_15px_rgba(255,87,51,0.5)]'}`}
+        >
+          Despeguemos
+        </button>
       </div>
-      <h1 className="text-6xl font-bold mb-4">
-        <span className="bg-gradient-to-r from-primary via-tertiary to-secondary bg-clip-text text-transparent">La Agencia De Marketing</span>
-        <br />
-        <span className="relative">
-          QUE NECESITAS!
-          <span className="absolute bottom-0 left-0 w-full h-1 bg-primary"></span>
-        </span>
-        .
-      </h1>
-      <p className="text-xl text-dark-muted max-w-2xl mx-auto">
-      Despega con creatividad
-      </p>
     </section>
   );
 };
