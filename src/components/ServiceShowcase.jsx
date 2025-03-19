@@ -27,20 +27,39 @@ const ServiceShowcase = () => {
     const handleVideoIntersection = (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting && videoRef.current) {
-          videoRef.current.play().catch(error => {
-            console.log('Autoplay failed:', error);
-            // If autoplay fails, try with muted
-            videoRef.current.muted = true;
-            videoRef.current.play().catch(innerError => {
-              console.log('Muted autoplay also failed:', innerError);
-            });
-          });
-          videoRef.current.muted = false;
+          // Ensure video is muted initially to allow autoplay
+          videoRef.current.muted = true;
+          
+          // Try to play the video immediately if it's already loaded
+          if (videoRef.current.readyState >= 2) {
+            playVideo();
+          } else {
+            // If video is not loaded, wait for it
+            videoRef.current.addEventListener('loadeddata', playVideo, { once: true });
+          }
         } else if (videoRef.current) {
           videoRef.current.pause();
           videoRef.current.muted = true;
         }
       });
+    };
+
+    // Helper function to handle video playback
+    const playVideo = () => {
+      if (!videoRef.current) return;
+      
+      videoRef.current.play()
+        .then(() => {
+          // Unmute after successful autoplay
+          videoRef.current.muted = false;
+        })
+        .catch(error => {
+          console.log('Autoplay failed:', error);
+          // Keep video muted and try to play again
+          videoRef.current.play().catch(innerError => {
+            console.log('Muted autoplay also failed:', innerError);
+          });
+        });
     };
     
     // Handle section visibility for WhatsApp button toggle

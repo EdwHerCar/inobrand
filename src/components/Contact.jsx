@@ -1,140 +1,76 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Pagination, Navigation } from 'swiper/modules';
 import { FaFacebook, FaInstagram, FaTiktok } from 'react-icons/fa';
-import { useWhatsAppButton } from '../context/WhatsAppButtonContext';
 import 'swiper/css';
 import 'swiper/css/effect-coverflow';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
-const Contact = () => {
+const Showcase = () => {
   const videoRefs = useRef([]);
-  const sectionRef = useRef(null);
-  const { setIsContactVisible } = useWhatsAppButton();
-  const [loadedVideos, setLoadedVideos] = useState(new Set());
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  const isInViewport = (element) => {
-    const rect = element.getBoundingClientRect();
-    return (
-      rect.top >= 0 &&
-      rect.left >= 0 &&
-      rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-      rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-    );
-  };
+  const observerRefs = useRef([]);
+  const mockupRef = useRef(null);
 
   useEffect(() => {
-    let swiperInstance = null;
-
-    // Function to handle video playback
-    const handleVideoPlayback = async (video, shouldPlay) => {
-      if (!video) return;
-
-      try {
-        if (shouldPlay) {
-          if (video.readyState >= 2) {
-            video.currentTime = 0;
-            video.muted = true;
-            await video.play();
-          } else {
-            video.load();
-            video.addEventListener('loadeddata', async () => {
-              video.currentTime = 0;
-              video.muted = true;
-              await video.play();
-            }, { once: true });
-          }
-        } else {
-          video.pause();
-          video.currentTime = 0;
-        }
-      } catch (error) {
-        console.log('Video playback error:', error);
-      }
-    };
-
-    // Function to handle active slide's video
-    const handleActiveVideo = () => {
-      if (!swiperInstance) return;
-      
-      const isVisible = sectionRef.current && isInViewport(sectionRef.current);
-      const currentActiveIndex = swiperInstance.activeIndex;
-      setActiveIndex(currentActiveIndex);
-
+    const handleSlideChange = () => {
       videoRefs.current.forEach((video, index) => {
-        if (!video) return;
-        const isActive = index === currentActiveIndex;
-        handleVideoPlayback(video, isActive && isVisible);
+        if (video) {
+          const slide = video.closest('.swiper-slide');
+          if (slide) {
+            // Verificar si el slide está en el centro
+            const isCentered = slide.classList.contains('swiper-slide-active');
+            
+            if (isCentered) {
+              // Activar el audio del video central
+              video.muted = false;
+              video.play().catch(error => {
+                console.warn(`Error playing video ${index + 1}:`, error);
+                video.muted = true;
+                video.play().catch(innerError => {
+                  console.warn(`Fallback muted playback failed for video ${index + 1}:`, innerError);
+                });
+              });
+            } else {
+              // Mantener silenciados los videos que no están en el centro
+              video.muted = true;
+            }
+          }
+        }
       });
     };
 
-    // Initialize Swiper and videos
-    const initializeSwiper = () => {
-      const swiperEl = document.querySelector('.swiper');
-      if (swiperEl && swiperEl.swiper) {
-        swiperInstance = swiperEl.swiper;
-        swiperInstance.on('slideChange', handleActiveVideo);
-        swiperInstance.on('init', handleActiveVideo);
-
-        // Initial video setup
-        setTimeout(handleActiveVideo, 300);
-      }
+    const handleVideoError = (event) => {
+      const video = event.target;
+      console.warn('Video loading error:', video.src);
+      video.load();
     };
 
-    // Set up intersection observer for section visibility
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsContactVisible(entry.isIntersecting);
-        if (entry.isIntersecting) {
-          handleActiveVideo();
-        } else {
-          videoRefs.current.forEach(video => {
-            if (video) {
-              video.pause();
-              video.currentTime = 0;
-            }
-          });
-        }
-      },
-      { threshold: [0, 0.3] }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    // Initialize videos
-    videoRefs.current.forEach((video) => {
+    // Add event listeners to videos
+    videoRefs.current.forEach(video => {
       if (video) {
-        video.load();
-        video.addEventListener('loadeddata', () => {
-          if (!loadedVideos.has(video.src)) {
-            setLoadedVideos(prev => new Set([...prev, video.src]));
-          }
-        });
+        video.addEventListener('error', handleVideoError);
       }
     });
 
-    // Initialize swiper after a short delay
-    setTimeout(initializeSwiper, 100);
+    const swiperElement = document.querySelector('.swiper').swiper;
+    if (swiperElement) {
+      swiperElement.on('slideChange', handleSlideChange);
+      swiperElement.on('init', handleSlideChange);
+    }
 
     return () => {
-      if (swiperInstance) {
-        swiperInstance.off('slideChange', handleActiveVideo);
-        swiperInstance.off('init', handleActiveVideo);
-      }
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
       videoRefs.current.forEach(video => {
         if (video) {
-          video.pause();
-          video.currentTime = 0;
+          video.removeEventListener('error', handleVideoError);
         }
       });
-      setIsContactVisible(false);
+
+      const swiperElement = document.querySelector('.swiper').swiper;
+      if (swiperElement) {
+        swiperElement.off('slideChange', handleSlideChange);
+        swiperElement.off('init', handleSlideChange);
+      }
     };
   }, []);
 
@@ -161,7 +97,7 @@ const Contact = () => {
     },
     {
       id: 5,
-      videoUrl: '/videos/5.mp4',
+      videoUrl: '/videos/5.mov',
       title: 'Visual Storytelling'
     },
     {
@@ -176,29 +112,44 @@ const Contact = () => {
     },
     {
       id: 8,
-      videoUrl: '/videos/8.mp4',
-      title: 'Creative Innovation'
+      videoUrl: '/videos/8.mov',
+      title: 'Creative Solutions'
     }
   ];
 
   return (
-    <section ref={sectionRef} className="min-h-screen w-full flex flex-col justify-center items-center py-16 px-4 overflow-hidden">
+    <section className="min-h-screen w-full flex flex-col justify-center items-center py-16 px-4 overflow-hidden">
       <div className="container mx-auto max-w-7xl">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-light-text dark:text-dark-text">
             Nuestro Trabajo
           </h2>
-          <p className="text-xl text-light-muted dark:text-dark-muted max-w-2xl mx-auto">
+          <p className="text-xl text-light-muted dark:text-dark-muted max-w-2xl mx-auto mb-6">
             Descubre cómo transformamos marcas a través del poder del marketing digital
           </p>
-          <div className="flex justify-center items-center gap-6 mt-6">
-            <a href="https://www.facebook.com/share/1BJ78sVjej/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="text-3xl text-light-text dark:text-dark-text hover:text-primary dark:hover:text-primary transition-colors duration-300">
+          <div className="flex justify-center gap-6 mb-8">
+            <a
+              href="https://www.facebook.com/share/1BJ78sVjej/?mibextid=wwXIfr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-3xl text-light-text dark:text-dark-text hover:text-primary transition-colors"
+            >
               <FaFacebook />
             </a>
-            <a href="https://www.instagram.com/inobrandd?igsh=N3R4bjNtejB1NTBy" target="_blank" rel="noopener noreferrer" className="text-3xl text-light-text dark:text-dark-text hover:text-primary dark:hover:text-primary transition-colors duration-300">
+            <a
+              href="https://www.instagram.com/inobrandd?igsh=N3R4bjNtejB1NTBy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-3xl text-light-text dark:text-dark-text hover:text-primary transition-colors"
+            >
               <FaInstagram />
             </a>
-            <a href="https://www.tiktok.com/@inobrandd?_t=ZM-8uc8OGUYwpb&_r=1" target="_blank" rel="noopener noreferrer" className="text-3xl text-light-text dark:text-dark-text hover:text-primary dark:hover:text-primary transition-colors duration-300">
+            <a
+              href="https://www.tiktok.com/@inobrandd?_t=ZM-8uc8OGUYwpb&_r=1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-3xl text-light-text dark:text-dark-text hover:text-primary transition-colors"
+            >
               <FaTiktok />
             </a>
           </div>
@@ -208,8 +159,9 @@ const Contact = () => {
           effect={'coverflow'}
           grabCursor={true}
           centeredSlides={true}
-          loop={true}
           slidesPerView={1}
+          loop={true}
+          loopedSlides={2}
           breakpoints={{
             640: { slidesPerView: 2 },
             1024: { slidesPerView: 3 },
@@ -222,7 +174,7 @@ const Contact = () => {
             modifier: 1,
             slideShadows: false,
           }}
-          pagination={true}
+          pagination={false}
           navigation={true}
           modules={[EffectCoverflow, Pagination, Navigation]}
           className="w-full py-12"
@@ -232,13 +184,13 @@ const Contact = () => {
               <div className="relative w-full max-w-[360px] mx-auto">
                 <div className="absolute top-[4%] left-[6%] right-[6%] bottom-[4%] rounded-[40px] overflow-hidden">
                   <video
-                    ref={el => videoRefs.current[index] = el}
+                    ref={(el) => (videoRefs.current[index] = el)}
                     autoPlay
                     loop
                     muted
                     playsInline
-                    preload="auto"
                     className="w-full h-full object-cover object-center"
+                    onError={(e) => console.warn(`Error loading video ${index + 1}:`, e)}
                   >
                     <source src={item.videoUrl} type="video/mp4" />
                   </video>
@@ -271,4 +223,4 @@ const Contact = () => {
   );
 };
 
-export default Contact;
+export default Showcase;

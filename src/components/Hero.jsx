@@ -55,19 +55,17 @@ const Hero = () => {
     if (sloganSection) {
       const start = window.pageYOffset;
       const end = sloganSection.getBoundingClientRect().top + window.pageYOffset;
-      const duration = 3000; // 3 seconds
+      const duration = 3000; // Reduced from 3000ms to 1500ms for faster response
       const startTime = performance.now();
 
       function animate(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
         
-        // Easing function for smooth animation
-        const easeInOutCubic = t => t < 0.5
-          ? 4 * t * t * t
-          : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        // Modified easing function for quicker initial movement
+        const easeOutQuart = t => 1 - Math.pow(1 - t, 4);
 
-        const currentPosition = start + (end - start) * easeInOutCubic(progress);
+        const currentPosition = start + (end - start) * easeOutQuart(progress);
         window.scrollTo(0, currentPosition);
 
         if (progress < 1) {
