@@ -1,22 +1,22 @@
-import { useState } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Navbar from './components/Navbar'
-import Hero from './components/Hero'
-import Slogan from './components/Slogan'
-import ServiceShowcase from './components/ServiceShowcase'
-import Services from './components/Services'
-import CTA from './components/CTA'
-import Pricing from './components/Pricing'
-import Contact from './components/Contact'
-import Footer from './components/Footer'
-import ParticlesBackground from './components/ParticlesBackground'
-import WhatsAppButton from './components/WhatsAppButton'
-import Mission from './components/Mission'
-import Vision from './components/Vision'
-import PrivacyPolicy from './components/PrivacyPolicy'
-import AboutUs from './components/AboutUs'
-import { ThemeProvider, useTheme } from './context/ThemeContext'
-import { WhatsAppButtonProvider } from './context/WhatsAppButtonContext'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Hero from './components/Hero';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import Slogan from './components/Slogan';
+import Services from './components/Services';
+import CTA from './components/CTA';
+import Pricing from './components/Pricing';
+import Contact from './components/Contact';
+import AboutUs from './components/AboutUs';
+import Mission from './components/Mission';
+import Vision from './components/Vision';
+import ServiceShowcase from './components/ServiceShowcase';
+
+import ParticlesBackground from './components/ParticlesBackground';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import WhatsAppButton from './components/WhatsAppButton';
+import { WhatsAppButtonProvider } from './context/WhatsAppButtonContext';
 
 const ThemeToggle = () => {
   const { isDarkMode, toggleTheme } = useTheme();
@@ -66,7 +66,6 @@ function App() {
                 <Route path="/about-us" element={<AboutUs />} />
                 <Route path="/mission" element={<Mission />} />
                 <Route path="/vision" element={<Vision />} />
-                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               </Routes>
             </div>
           </div>

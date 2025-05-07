@@ -3,18 +3,20 @@ import { useWhatsAppButton } from '../context/WhatsAppButtonContext';
 
 const WhatsAppButton = () => {
   const {
-    isServiceShowcaseVisible,
     isSloganVisible,
     isHeroVisible,
-    isContactVisible
+    isContactVisible,
+    isContenidoVisible,
+    isServiceShowcaseVisible
   } = useWhatsAppButton();
   
   const handleWhatsAppClick = () => {
     window.open('https://wa.me/2411984848', '_blank');
   };
 
-  // Hide button if any of the specified sections are visible
-  if (isServiceShowcaseVisible || isSloganVisible || isHeroVisible || isContactVisible) return null;
+  // Mostrar el botón en todas las secciones excepto las tres primeras
+  const isInFirstThreeSections = isSloganVisible || isHeroVisible || isServiceShowcaseVisible;
+  if (isInFirstThreeSections) return null;
 
   return (
     <button

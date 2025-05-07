@@ -9,6 +9,7 @@ export const WhatsAppButtonProvider = ({ children }) => {
   const [isSloganVisible, setIsSloganVisible] = useState(false);
   const [isHeroVisible, setIsHeroVisible] = useState(false);
   const [isContactVisible, setIsContactVisible] = useState(false);
+  const [isContenidoVisible, setIsContenidoVisible] = useState(false);
 
   const value = {
     isServiceShowcaseVisible,
@@ -18,7 +19,9 @@ export const WhatsAppButtonProvider = ({ children }) => {
     isHeroVisible,
     setIsHeroVisible,
     isContactVisible,
-    setIsContactVisible
+    setIsContactVisible,
+    isContenidoVisible,
+    setIsContenidoVisible
   };
 
   return (
