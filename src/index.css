@@ -5,29 +5,90 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+  }
+  
+  body {
     min-height: 100vh;
     overflow-x: hidden;
+    /* Ocultar scrollbar en todos los navegadores */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
   }
+  
+  /* Ocultar scrollbar en WebKit browsers (Chrome, Safari, Edge) */
+  html::-webkit-scrollbar {
+    display: none;
+  }
+
+  section {
+    @apply min-h-screen flex flex-col justify-center items-center py-8 px-4;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-gray-900 dark:text-white;
+  }
+  
+  p {
+    @apply text-gray-600 dark:text-gray-300;
+  }
+}
+
+@layer components {
   body {
-    @apply bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text min-h-screen;
+    @apply bg-white text-gray-800 dark:bg-gray-900 dark:text-white min-h-screen;
     background-attachment: fixed;
     overflow-x: hidden;
     position: relative;
+    /* Ocultar scrollbar en body también */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+  }
+  
+  /* Ocultar scrollbar en WebKit browsers para body */
+  body::-webkit-scrollbar {
+    display: none;
   }
 
   #root {
     @apply min-h-screen flex flex-col relative;
   }
 
-  section {
-    @apply min-h-screen flex flex-col justify-center items-center py-8 px-4;
+  .swiper-button-next,
+  .swiper-button-prev {
+    @apply text-white bg-black/50 hover:bg-black/70 rounded-full w-12 h-12 flex items-center justify-center transition-colors duration-300 !important;
+    margin-top: -24px !important;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply text-light-text dark:text-dark-text;
+  .swiper-button-next:after,
+  .swiper-button-prev:after {
+    @apply text-xl font-bold !important;
   }
 
-  p {
-    @apply text-light-muted dark:text-dark-muted;
+  .swiper-slide {
+    width: auto !important;
+    transition: filter 0.3s ease;
+  }
+  
+  .swiper-slide:not(.swiper-slide-active) {
+    filter: brightness(0.5);
+  }
+  
+  .swiper-slide-active {
+    z-index: 10 !important;
+    filter: brightness(1);
+  }
+
+  /* Asegurar que las sombras no recorten el contenido */
+  .swiper-slide-shadow-left,
+  .swiper-slide-shadow-right {
+    border-radius: 36px !important;
+  }
+
+  .swiper-button-next {
+    right: 0 !important;
+  }
+
+  .swiper-button-prev {
+    left: 0 !important;
   }
 }

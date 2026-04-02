@@ -55,17 +55,19 @@ const Hero = () => {
     if (sloganSection) {
       const start = window.pageYOffset;
       const end = sloganSection.getBoundingClientRect().top + window.pageYOffset;
-      const duration = 3000; // Reduced from 3000ms to 1500ms for faster response
+      const duration = 1200; // Optimized duration for smoother experience
       const startTime = performance.now();
 
       function animate(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
         
-        // Modified easing function for quicker initial movement
-        const easeOutQuart = t => 1 - Math.pow(1 - t, 4);
+        // Smooth easing function for consistent movement
+        const easeInOutCubic = t => t < 0.5 
+          ? 4 * t * t * t 
+          : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-        const currentPosition = start + (end - start) * easeOutQuart(progress);
+        const currentPosition = start + (end - start) * easeInOutCubic(progress);
         window.scrollTo(0, currentPosition);
 
         if (progress < 1) {
@@ -78,16 +80,17 @@ const Hero = () => {
   };
 
   return (
-    <section id="hero-section" className="text-center pt-6 mb-4">
-      <div className="mb-4 sm:mb-6">
+    <section id="hero-section" className="text-center pt-4 sm:pt-6 lg:pt-8 mb-4 sm:mb-6 lg:mb-8 px-4 sm:px-6 lg:px-8">
+      <div className="mb-4 sm:mb-6 lg:mb-8">
         <img
           src="/images/inobrand-logo.png"
           alt="InoBrand Logo"
-          className="w-[16rem] h-[16rem] mx-auto object-contain md:w-[32rem] md:h-[32rem] sm:w-[24rem] sm:h-[24rem]"
+          className="w-[22rem] h-[22rem] sm:w-[26rem] sm:h-[26rem] md:w-[30rem] md:h-[30rem] lg:w-[28rem] lg:h-[28rem] xl:w-[32rem] xl:h-[32rem] 2xl:w-[36rem] 2xl:h-[36rem] mx-auto object-contain transition-all duration-300"
         />
         <button
           onClick={handleScrollToSlogan}
-          className={`mt-6 px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-full font-bold text-lg transition-all duration-300 shadow-lg ${isDarkMode ? 'hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'hover:shadow-[0_0_15px_rgba(255,87,51,0.5)]'}`}
+          className={`mt-4 sm:mt-6 lg:mt-8 px-6 sm:px-8 lg:px-10 py-2.5 sm:py-3 lg:py-4 bg-gradient-to-r from-primary to-secondary text-white rounded-full font-bold text-base sm:text-lg lg:text-xl transition-all duration-300 shadow-lg hover:scale-105 active:scale-95 ${isDarkMode ? 'hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'hover:shadow-[0_0_15px_rgba(255,87,51,0.5)]'}`}
+          aria-label="Ir a la sección de eslogan"
         >
           Despeguemos
         </button>

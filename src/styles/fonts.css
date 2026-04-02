@@ -42,3 +42,17 @@
   font-style: italic;
   font-display: swap;
 }
+
+/* Specific font-face for inverted question mark with Azonix */
+@font-face {
+  font-family: 'Azonix-Special';
+  src: url('/fonts/Azonix.otf') format('opentype');
+  unicode-range: U+00BF; /* Inverted question mark */
+  font-display: swap;
+}
+
+/* Custom CSS for font-heading to handle special characters */
+.font-heading {
+  font-family: 'Azonix-Special', 'Azonix', 'Nunito', sans-serif;
+  text-rendering: optimizeLegibility;
+}

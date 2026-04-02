@@ -1,4 +1,5 @@
 import React from 'react';
+import '../styles/stars.css';
 
 const CTA = () => {
   const handleWhatsAppClick = () => {
@@ -6,15 +7,26 @@ const CTA = () => {
   };
 
   return (
-    <section className="py-16 rounded-lg text-center px-4">
-      <h2 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-tertiary bg-clip-text text-transparent uppercase font-heading">¿LISTO PARA TRANSFORMAR TU PRESENCIA DIGITAL?</h2>
-      <p className="text-dark-muted text-xl mb-8 max-w-2xl mx-auto font-body">Impulsa tu marca con estrategias personalizadas y resultados tangibles</p>
-      <button 
-        onClick={handleWhatsAppClick}
-        className="bg-gradient-to-r from-primary via-tertiary to-secondary text-white font-medium py-3 px-8 rounded-full transition-all hover:shadow-lg hover:shadow-primary/20 font-body"
-      >
-        SOLICITA UNA ASESORIA
-      </button>
+    <section className="py-24 min-h-screen w-full flex items-center justify-center relative overflow-hidden">
+      <div className="absolute inset-0 opacity-20">
+        <div className="stars absolute inset-0"></div>
+      </div>
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl md:text-6xl mb-6 text-gray-900 dark:text-white font-heading tracking-wider">
+            <span className="inline-block transform rotate-180">?</span>LISTO PARA TRANSFORMAR TU PRESENCIA DIGITAL?
+          </h2>
+          <p className="text-lg md:text-xl mb-10 text-gray-700 dark:text-white/80 font-body">
+            Impulsa tu marca con estrategias personalizadas y resultados tangibles
+          </p>
+          <button
+            onClick={handleWhatsAppClick}
+            className="px-8 py-4 bg-[#7B3FE4] text-white hover:bg-[#6A35C2] rounded-lg text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl font-body uppercase"
+          >
+            Solicita una asesoría
+          </button>
+        </div>
+      </div>
     </section>
   );
 };

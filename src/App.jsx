@@ -1,5 +1,6 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { ErrorBoundary } from 'react-error-boundary';
 import Hero from './components/Hero';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -11,67 +12,85 @@ import Contact from './components/Contact';
 import AboutUs from './components/AboutUs';
 import Mission from './components/Mission';
 import Vision from './components/Vision';
+import PrivacyPolicy from './components/PrivacyPolicy';
 import ServiceShowcase from './components/ServiceShowcase';
+import ThemeToggle from './components/ThemeToggle';
+import VideoPlayer from './components/VideoPlayer';
+import VideoGallery from './components/VideoGallery';
+import VideoCarousel from './components/VideoCarousel';
 
 import ParticlesBackground from './components/ParticlesBackground';
-import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { ThemeProvider } from './context/ThemeContext';
 import WhatsAppButton from './components/WhatsAppButton';
 import { WhatsAppButtonProvider } from './context/WhatsAppButtonContext';
 
-const ThemeToggle = () => {
-  const { isDarkMode, toggleTheme } = useTheme();
+// Error fallback component
+const ErrorFallback = ({ error, resetErrorBoundary }) => {
   return (
-    <button
-      onClick={toggleTheme}
-      className="fixed top-6 right-6 p-3 rounded-full bg-light-surface dark:bg-dark-surface hover:bg-light-surface/90 dark:hover:bg-dark-surface/90 transition-all duration-300 z-50 backdrop-blur-sm"
-      aria-label="Toggle theme"
-    >
-      {isDarkMode ? (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-yellow-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      ) : (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-        </svg>
-      )}
-    </button>
+    <div className="flex items-center justify-center min-h-screen bg-red-50 text-red-800 p-4">
+      <div className="max-w-md">
+        <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
+        <p className="mb-4">{error.message}</p>
+        <button
+          onClick={resetErrorBoundary}
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+        >
+          Try again
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Componente interno para manejar la lógica condicional
+const AppContent = () => {
+  const location = useLocation();
+  const isVideoPlayerPage = location.pathname.startsWith('/video/');
+
+  return (
+    <div className="relative min-h-screen w-full overflow-x-hidden bg-light-bg dark:bg-dark-bg">
+      {!isVideoPlayerPage && <ParticlesBackground />}
+      <div className="relative z-10">
+        {!isVideoPlayerPage && <ThemeToggle />}
+        {!isVideoPlayerPage && <Navbar />}
+        {!isVideoPlayerPage && <WhatsAppButton />}
+        <Routes>
+          <Route path="/" element={
+            <main>
+              <Hero />
+              <Slogan />
+              <ServiceShowcase />
+              <VideoGallery />
+              <Services />
+              <CTA />
+              <Pricing />
+              <Contact />
+              <VideoCarousel />
+              <Footer />
+            </main>
+          } />
+          <Route path="/about-us" element={<AboutUs />} />
+          <Route path="/mission" element={<Mission />} />
+          <Route path="/vision" element={<Vision />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/video/:videoId" element={<VideoPlayer />} />
+        </Routes>
+      </div>
+    </div>
   );
 };
 
 function App() {
   return (
-    <ThemeProvider>
-      <WhatsAppButtonProvider>
-        <Router>
-          <div className="relative min-h-screen w-full overflow-x-hidden bg-light-bg dark:bg-dark-bg">
-            <ParticlesBackground />
-            <div className="relative z-10">
-              <ThemeToggle />
-              <Navbar />
-              <WhatsAppButton />
-              <Routes>
-                <Route path="/" element={
-                  <main>
-                    <Hero />
-                    <Slogan />
-                    <ServiceShowcase />
-                    <Services />
-                    <CTA />
-                    <Pricing />
-                    <Contact />
-                    <Footer />
-                  </main>
-                } />
-                <Route path="/about-us" element={<AboutUs />} />
-                <Route path="/mission" element={<Mission />} />
-                <Route path="/vision" element={<Vision />} />
-              </Routes>
-            </div>
-          </div>
-        </Router>
-      </WhatsAppButtonProvider>
-    </ThemeProvider>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <ThemeProvider>
+        <WhatsAppButtonProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </WhatsAppButtonProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
