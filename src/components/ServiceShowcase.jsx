@@ -1,16 +1,19 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useWhatsAppButton } from '../context/WhatsAppButtonContext';
+import { videos } from '../data/videos';
 
 const ServiceShowcase = () => {
   const sectionRef = useRef(null);
   const videoRef = useRef(null);
-  const iframeRef = useRef(null);
   const { setIsServiceShowcaseVisible } = useWhatsAppButton();
   const [isButtonFlashing, setIsButtonFlashing] = useState(false);
   const [isVideoVisible, setIsVideoVisible] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+
+  // Usaremos el primer video vertical disponible en Supabase
+  const displayVideo = videos.find(v => v.type === 'vertical') || videos[0];
 
   useEffect(() => {
     // Detectar tipo de dispositivo para ajustar configuración
@@ -41,9 +44,9 @@ const ServiceShowcase = () => {
     // Crear un solo observer para el video
     const videoObserver = new IntersectionObserver(handleVideoIntersection, videoOptions);
     
-    // Observar solo el contenedor del video
-    if (videoRef.current) {
-      videoObserver.observe(videoRef.current);
+    // Observar solo la sección completa en su lugar
+    if (sectionRef.current) {
+      videoObserver.observe(sectionRef.current);
     }
 
     // Set up button flashing animation
@@ -65,26 +68,20 @@ const ServiceShowcase = () => {
 
   // Controlar reproducción según visibilidad de la sección
   useEffect(() => {
-    if (!videoLoaded || !iframeRef.current?.contentWindow) return;
+    if (!videoLoaded || !videoRef.current) return;
     try {
-      const cw = iframeRef.current.contentWindow;
       if (isVideoVisible) {
-        const playMsg = JSON.stringify({ event: 'command', func: 'playVideo', args: [] });
-        cw.postMessage(playMsg, '*');
-        // Mantener estado de mute según preferencia del usuario
-        if (!isMuted) {
-          const unmuteMsg = JSON.stringify({ event: 'command', func: 'unMute', args: [] });
-          cw.postMessage(unmuteMsg, '*');
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+             console.warn('Autoplay prevented in Showcase:', error);
+          });
         }
       } else {
-        const pauseMsg = JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] });
-        cw.postMessage(pauseMsg, '*');
-        const muteMsg = JSON.stringify({ event: 'command', func: 'mute', args: [] });
-        cw.postMessage(muteMsg, '*');
-        setIsMuted(true);
+        videoRef.current.pause();
       }
     } catch (_) {}
-  }, [isVideoVisible, videoLoaded, isMuted]);
+  }, [isVideoVisible, videoLoaded]);
 
   const services = [{
     title: 'Deja huella',
@@ -100,6 +97,14 @@ const ServiceShowcase = () => {
     description: 'Nos encargamos de hacerte visible, mientras tú te ocupas de la operación de tu negocio'
   }];
 
+  // Fix para que Safari lo inicie en mute
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = true;
+    }
+  }, []);
+
   const handleWhatsAppClick = () => {
     window.open('https://wa.me/2411984848', '_blank');
   };
@@ -113,31 +118,19 @@ const ServiceShowcase = () => {
   const handleIframeError = () => {
     setVideoError(true);
     setVideoLoaded(false);
-    console.error('Error al cargar el video de YouTube');
+    console.error('Error al cargar el video en ServiceShowcase');
   };
 
   const unmuteVideo = (e) => {
     try {
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      if (iframeRef.current && iframeRef.current.contentWindow) {
-        const unmuteMsg = JSON.stringify({ event: 'command', func: 'unMute', args: [] });
-        iframeRef.current.contentWindow.postMessage(unmuteMsg, '*');
-        const playMsg = JSON.stringify({ event: 'command', func: 'playVideo', args: [] });
-        iframeRef.current.contentWindow.postMessage(playMsg, '*');
+      if (videoRef.current) {
+        videoRef.current.muted = false;
+        videoRef.current.play();
         setIsMuted(false);
       }
-    } catch (e) {
-      try {
-        const src = iframeRef.current?.src;
-        if (src) {
-          const url = new URL(src);
-          url.searchParams.set('mute', '0');
-          iframeRef.current.src = url.toString();
-          setIsMuted(false);
-        }
-      } catch (_) {}
-    }
+    } catch (_) {}
   };
 
   return (
@@ -150,7 +143,7 @@ const ServiceShowcase = () => {
           {/* Video mockup container */}
           <div className="w-full lg:w-1/2 flex justify-center order-1 lg:order-1">
             <div className="relative w-full max-w-[280px] sm:max-w-[320px] md:max-w-[360px] lg:max-w-[380px] xl:max-w-[420px] mx-auto">
-              <div ref={videoRef} className="absolute top-[3%] left-[6%] right-[6%] bottom-[2%] rounded-[32px] sm:rounded-[36px] md:rounded-[40px] overflow-hidden">
+              <div className="absolute top-[3%] left-[6%] right-[6%] bottom-[2%] rounded-[32px] sm:rounded-[36px] md:rounded-[40px] overflow-hidden">
                 <div className="w-full h-full relative">
                   {/* Loading placeholder */}
                   {!videoLoaded && !videoError && (
@@ -167,8 +160,8 @@ const ServiceShowcase = () => {
                         <button 
                           onClick={() => {
                             setVideoError(false);
-                            if (iframeRef.current) {
-                              iframeRef.current.src = iframeRef.current.src;
+                            if (videoRef.current) {
+                              videoRef.current.load();
                             }
                           }}
                           className="mt-2 text-xs text-primary hover:underline"
@@ -180,20 +173,23 @@ const ServiceShowcase = () => {
                   )}
                   
                   <div className={`absolute inset-0 overflow-hidden transition-opacity duration-300 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}>
-                    <iframe
-                      ref={iframeRef}
-                      src={`https://www.youtube-nocookie.com/embed/bjjNtEb9oOI?autoplay=1&mute=1&loop=1&playlist=bjjNtEb9oOI&controls=0&rel=0&showinfo=0&iv_load_policy=3&modestbranding=1&playsinline=1&disablekb=1&fs=0&enablejsapi=1&origin=${window.location.origin}`}
-                      className="absolute top-1/2 left-1/2 w-[120%] h-[120%]"
-                      frameBorder="0"
-                      allow="autoplay; encrypted-media"
-                      loading="lazy"
-                      onLoad={handleIframeLoad}
-                      onError={handleIframeError}
-                      title="Video de presentación"
-                      style={{
-                        transform: 'translate(-50%, -52%) scale(1.0)',
-                        transformOrigin: 'center',
-                        pointerEvents: 'none'
+                    <video
+                      ref={videoRef}
+                      src={displayVideo.src}
+                      className="absolute inset-0 w-full h-full object-cover z-10"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      onLoadedData={handleIframeLoad}
+                      onError={(e) => {
+                        console.error('Error loading video in ServiceShowcase:', displayVideo.id, e.nativeEvent);
+                        if (videoRef.current && displayVideo.fallback && !videoRef.current.src.endsWith('.webm')) {
+                           videoRef.current.src = displayVideo.fallback.replace('.mp4', '.webm').replace('.mov', '.webm');
+                           videoRef.current.load();
+                        } else {
+                           handleIframeError();
+                        }
                       }}
                     />
                     {videoLoaded && !videoError && isMuted && (

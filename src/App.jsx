@@ -18,6 +18,7 @@ import ThemeToggle from './components/ThemeToggle';
 import VideoPlayer from './components/VideoPlayer';
 import VideoGallery from './components/VideoGallery';
 import VideoCarousel from './components/VideoCarousel';
+import PodcastCTA from './components/PodcastCTA';
 
 import ParticlesBackground from './components/ParticlesBackground';
 import { ThemeProvider } from './context/ThemeContext';
@@ -60,12 +61,11 @@ const AppContent = () => {
               <Hero />
               <Slogan />
               <ServiceShowcase />
-              <VideoGallery />
               <Services />
               <CTA />
               <Pricing />
-              <Contact />
               <VideoCarousel />
+              <PodcastCTA />
               <Footer />
             </main>
           } />

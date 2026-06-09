@@ -50,6 +50,16 @@ const VideoPlayer = () => {
     window.scrollTo(0, 0);
   }, []);
 
+  // Safari specific fix for native videos
+  useEffect(() => {
+    if (currentVideo && currentVideo.type !== 'youtube' && currentVideo.type !== 'cloudinary') {
+      if (videoRef.current) {
+        videoRef.current.defaultMuted = true;
+        videoRef.current.muted = true;
+      }
+    }
+  }, [currentVideo]);
+
   const unmuteVideo = (e) => {
     // Evitar cualquier navegación/propagación accidental al hacer clic
     try {
@@ -213,14 +223,15 @@ const VideoPlayer = () => {
                       muted
                       loop
                       playsInline
-                      crossOrigin="anonymous"
                       preload="auto"
-                      onLoadedData={() => setIsLoaded(true)}
+                      onLoadedData={() => {
+                         setIsLoaded(true);
+                         setHasError(false);
+                      }}
                       onError={(e) => {
-                         console.error('Error loading video in player:', currentVideo.id, currentVideo.src, e.nativeEvent);
-                         // Intentar cargar el fallback si falla Supabase
-                         if (videoRef.current && currentVideo.fallback && !videoRef.current.src.endsWith(currentVideo.fallback)) {
-                           videoRef.current.src = currentVideo.fallback;
+                         console.error('Error loading video in player:', currentVideo.id, e.nativeEvent);
+                         if (videoRef.current && currentVideo.fallback && !videoRef.current.src.endsWith('.webm')) {
+                           videoRef.current.src = currentVideo.fallback.replace('.mp4', '.webm').replace('.mov', '.webm');
                            videoRef.current.load();
                          } else {
                            setHasError(true);

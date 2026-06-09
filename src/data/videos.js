@@ -27,32 +27,56 @@ export const videos = [
       fallback: '/videos/4.mp4',
       title: 'Video 4'
     },
-    { 
-      id: 5, 
-      type: 'supabase', 
-      src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/Copia%20de%20copy_290C210F-B182-49C4-9282-73A223E812D2.mov',
-      fallback: '/videos/5.mp4',
-      title: 'Video 5'
-    },
-    { 
-      id: 6, 
-      type: 'supabase', 
-      src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/Copia%20de%20promofinal2.mp4', 
-      fallback: '/videos/6.mp4',
-      title: 'Video 6'
-    },
-    { 
-      id: 7, 
-      type: 'supabase', 
-      src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/Copia%20de%20videoapertura1.mov',
-      fallback: '/videos/7.mp4',
-      title: 'Video 7'
-    },
-    { 
-      id: 8, 
-      type: 'supabase', 
-      src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/copy_7F35694D-CBE5-4EAF-B9C0-A4F7788BF21E.mov', 
-      fallback: '/videos/8.mp4',
-      title: 'Video 8'
-    },
+  {
+    id: 5,
+    title: 'Transformación Digital',
+    description: 'De lo tradicional a lo digital. Caso de éxito.',
+    src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/Copia%20de%20copy_290C210F-B182-49C4-9282-73A223E812D2.mov',
+    fallback: '/videos/5.mp4',
+    type: 'vertical',
+    metrics: {
+      views: '75K',
+      likes: '3.2K',
+      comments: '128'
+    }
+  },
+  {
+    id: 6,
+    title: 'Contenido Viral',
+    description: 'Cómo crear contenido que conecta y se comparte.',
+    src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/Copia%20de%20promofinal2.mp4',
+    fallback: '/videos/6.mp4',
+    type: 'vertical',
+    metrics: {
+      views: '110K',
+      likes: '5.5K',
+      comments: '342'
+    }
+  },
+  {
+    id: 7,
+    title: 'Estrategia de Marca',
+    description: 'Construyendo marcas que perduran en el tiempo.',
+    src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/Copia%20de%20videoapertura1.mov',
+    fallback: '/videos/7.mp4',
+    type: 'vertical',
+    metrics: {
+      views: '88K',
+      likes: '4.1K',
+      comments: '156'
+    }
+  },
+  {
+    id: 8,
+    title: 'Marketing de Contenidos',
+    description: 'El poder del contenido para atraer clientes.',
+    src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/copy_7F35694D-CBE5-4EAF-B9C0-A4F7788BF21E.mov',
+    fallback: '/videos/8.mp4',
+    type: 'vertical',
+    metrics: {
+      views: '65K',
+      likes: '2.8K',
+      comments: '94'
+    }
+  }
 ];
