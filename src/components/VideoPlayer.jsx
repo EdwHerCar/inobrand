@@ -1,263 +1,210 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { HiXMark, HiSpeakerWave, HiSpeakerXMark, HiChevronDown } from 'react-icons/hi2';
 import { videos } from '../data/videos';
-import { Cloudinary } from '@cloudinary/url-gen';
-import { AdvancedVideo } from '@cloudinary/react';
 
-// Util para extraer el ID de YouTube desde distintas URLs (watch, shorts, youtu.be, embed)
-const extractYouTubeId = (input) => {
-  if (!input) return '';
-  const idPattern = /^[a-zA-Z0-9_-]{11}$/;
-  if (idPattern.test(input)) return input;
-  const patterns = [
-    /v=([a-zA-Z0-9_-]{11})/,           // https://www.youtube.com/watch?v=ID
-    /shorts\/([a-zA-Z0-9_-]{11})/,     // https://www.youtube.com/shorts/ID
-    /youtu\.be\/([a-zA-Z0-9_-]{11})/, // https://youtu.be/ID
-    /embed\/([a-zA-Z0-9_-]{11})/,      // https://www.youtube.com/embed/ID
-  ];
-  for (const p of patterns) {
-    const m = input.match(p);
-    if (m && m[1]) return m[1];
-  }
-  return input; // fallback si ya es un ID u otro formato
-};
-
+/**
+ * Reproductor vertical tipo TikTok.
+ *
+ * Un contenedor con scroll-snap donde cada video ocupa la pantalla completa.
+ * Se apoya en el scroll nativo (no en listeners de wheel) para que el gesto
+ * sea idéntico en trackpad, rueda y táctil, y para heredar el momentum del
+ * sistema. Sólo suena el video visible; el resto se pausan.
+ *
+ * Al pasar del último video, un centinela al final cierra el reproductor y
+ * devuelve al usuario al carrusel.
+ */
 const VideoPlayer = () => {
   const { videoId } = useParams();
   const navigate = useNavigate();
-  const videoRef = useRef(null);
-  const iframeRef = useRef(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const containerRef = useRef(null);
+  const sentinelRef = useRef(null);
+  const videoRefs = useRef([]);
+  const salidaLanzadaRef = useRef(false);
 
-  // Configuración de Cloudinary
-  const cld = new Cloudinary({
-    cloud: {
-      cloudName: 'daxbztvuz'
-    }
-  });
+  const indiceInicial = Math.max(
+    0,
+    videos.findIndex(v => v.id === parseInt(videoId))
+  );
+  const [indiceActivo, setIndiceActivo] = useState(indiceInicial);
+  // Se llega aquí desde un clic en el carrusel, así que ya hay activación de
+  // usuario: podemos arrancar con sonido. Si el navegador lo rechazara, el
+  // efecto de reproducción vuelve a silencio automáticamente.
+  const [silenciado, setSilenciado] = useState(false);
 
-  const currentVideo = videos.find(video => video.id === parseInt(videoId));
-
-  const cldVideo = currentVideo?.type === 'cloudinary' ? cld.video(currentVideo.publicId) : null;
-
-  const handleClose = () => {
+  const salir = useCallback(() => {
+    if (salidaLanzadaRef.current) return;
+    salidaLanzadaRef.current = true;
     navigate('/#video-gallery');
-  };
+  }, [navigate]);
 
+  const videoActual = videos[indiceInicial];
+
+  // Posicionar en el video elegido sin animación (debe sentirse instantáneo).
   useEffect(() => {
-    window.scrollTo(0, 0);
+    const cont = containerRef.current;
+    if (!cont) return;
+    cont.scrollTo({ top: indiceInicial * cont.clientHeight, behavior: 'instant' });
+  }, [indiceInicial]);
+
+  // Detectar qué video está en pantalla para reproducir sólo ése.
+  useEffect(() => {
+    const cont = containerRef.current;
+    if (!cont) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const idx = Number(entry.target.dataset.indice);
+            if (!Number.isNaN(idx)) setIndiceActivo(idx);
+          }
+        });
+      },
+      { root: cont, threshold: 0.6 }
+    );
+
+    videoRefs.current.filter(Boolean).forEach(v => observer.observe(v));
+    return () => observer.disconnect();
   }, []);
 
-  // Safari specific fix for native videos
+  // Centinela final: al alcanzarlo, cerrar y volver al carrusel.
   useEffect(() => {
-    if (currentVideo && currentVideo.type !== 'youtube' && currentVideo.type !== 'cloudinary') {
-      if (videoRef.current) {
-        videoRef.current.defaultMuted = true;
-        videoRef.current.muted = true;
-      }
-    }
-  }, [currentVideo]);
+    const cont = containerRef.current;
+    const centinela = sentinelRef.current;
+    if (!cont || !centinela) return;
 
-  const unmuteVideo = (e) => {
-    // Evitar cualquier navegación/propagación accidental al hacer clic
-    try {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-    } catch {}
-    try {
-      // Si es YouTube, usar la API del iframe
-      if (currentVideo.type === 'youtube' && iframeRef.current?.contentWindow) {
-        const unmuteMsg = JSON.stringify({ event: 'command', func: 'unMute', args: [] });
-        iframeRef.current.contentWindow.postMessage(unmuteMsg, '*');
-        const playMsg = JSON.stringify({ event: 'command', func: 'playVideo', args: [] });
-        iframeRef.current.contentWindow.postMessage(playMsg, '*');
-        setIsMuted(false);
-        return;
-      }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) salir();
+      },
+      { root: cont, threshold: 0.9 }
+    );
 
-      // Si es video local o Cloudinary
-      const vidEl = videoRef.current?.videoRef?.current || videoRef.current;
-      if (vidEl) {
-        vidEl.muted = false;
-        vidEl.play().catch(() => {});
-        setIsMuted(false);
-      }
-    } catch (e) {
-      // Fallback: actualizar la URL del iframe para quitar mute
-      try {
-        const src = iframeRef.current?.src;
-        if (src) {
-          const url = new URL(src);
-          url.searchParams.set('mute', '0');
-          iframeRef.current.src = url.toString();
-          setIsMuted(false);
+    observer.observe(centinela);
+    return () => observer.disconnect();
+  }, [salir]);
+
+  // Reproducir el activo (con audio si se puede), pausar y rebobinar el resto.
+  useEffect(() => {
+    videoRefs.current.filter(Boolean).forEach((v, i) => {
+      if (i === indiceActivo) {
+        v.muted = silenciado;
+        const p = v.play();
+        if (p) {
+          p.catch(() => {
+            // Autoplay con sonido rechazado: recuperar en silencio.
+            v.muted = true;
+            setSilenciado(true);
+            v.play().catch(() => {});
+          });
         }
-      } catch (_) {}
-    }
-  };
+      } else {
+        v.pause();
+        v.currentTime = 0;
+      }
+    });
+  }, [indiceActivo, silenciado]);
 
-  if (!currentVideo) {
+  // Teclado: flechas para navegar, Escape para salir.
+  useEffect(() => {
+    const onKey = e => {
+      const cont = containerRef.current;
+      if (!cont) return;
+      if (e.key === 'Escape') salir();
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const delta = e.key === 'ArrowDown' ? 1 : -1;
+        cont.scrollTo({
+          top: (indiceActivo + delta) * cont.clientHeight,
+          behavior: 'smooth',
+        });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [indiceActivo, salir]);
+
+  // Mantener la URL en sintonía con el video visible, sin ensuciar el historial.
+  useEffect(() => {
+    const v = videos[indiceActivo];
+    if (v) navigate(`/video/${v.id}`, { replace: true });
+  }, [indiceActivo, navigate]);
+
+  if (!videoActual) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-black">
         <button
           onClick={() => navigate('/')}
-          className="text-white hover:text-gray-300 transition-colors"
+          className="text-white transition-colors hover:text-gray-300"
+          aria-label="Volver al inicio"
         >
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <HiXMark className="h-8 w-8" />
         </button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black relative">
-      {/* Botón de cerrar minimalista */}
+    <div className="fixed inset-0 z-50 bg-black">
+      {/* Cerrar */}
       <button
-        onClick={handleClose}
-        className="absolute top-4 right-4 z-50 text-white hover:text-gray-300 transition-colors p-2"
+        onClick={salir}
+        className="absolute right-4 top-4 z-50 rounded-full bg-black/50 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+        aria-label="Cerrar reproductor"
       >
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <HiXMark className="h-7 w-7" />
       </button>
 
-      {/* Contenedor del video centrado */}
-      <div className="flex items-center justify-center min-h-screen p-4">
-        <div className="max-w-md w-full">
-          <div className="relative bg-black overflow-hidden aspect-[9/16]">
-            {hasError ? (
-              <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
-                <div className="text-white text-center">
-                  <div className="text-lg mb-4">Error al cargar video</div>
-                  <button
-                    onClick={() => window.location.reload()}
-                    className="text-white/70 hover:text-white transition-colors"
-                  >
-                    Reintentar
-                  </button>
-                </div>
+      {/* Silenciar / activar audio */}
+      <button
+        onClick={() => setSilenciado(s => !s)}
+        className="absolute right-4 top-20 z-50 rounded-full bg-black/50 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+        aria-label={silenciado ? 'Activar audio' : 'Silenciar'}
+      >
+        {silenciado ? <HiSpeakerXMark className="h-6 w-6" /> : <HiSpeakerWave className="h-6 w-6" />}
+      </button>
+
+      {/* Feed vertical con anclaje: el scroll nativo da el momentum correcto */}
+      <div
+        ref={containerRef}
+        className="feed-vertical h-full w-full overflow-y-auto"
+        tabIndex={-1}
+      >
+        {videos.map((video, i) => (
+          // <div> y no <section>: index.css aplica min-h-screen y padding a
+          // todos los <section>, lo que rompería el video a pantalla completa.
+          <div
+            key={video.id}
+            className="relative flex h-full w-full snap-start items-center justify-center"
+          >
+            <video
+              ref={el => (videoRefs.current[i] = el)}
+              data-indice={i}
+              src={video.src}
+              poster={video.poster}
+              className="h-full w-full object-contain"
+              loop
+              playsInline
+              preload={Math.abs(i - indiceActivo) <= 1 ? 'auto' : 'none'}
+              onClick={() => setSilenciado(s => !s)}
+            />
+
+            {/* Pista de "desliza" sólo en el primero */}
+            {i === 0 && indiceActivo === 0 && (
+              <div className="pointer-events-none absolute bottom-28 left-1/2 -translate-x-1/2 animate-float text-white/70">
+                <HiChevronDown className="h-8 w-8" aria-hidden="true" />
               </div>
-            ) : (
-              <>
-                {!isLoaded && (
-                  <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-                  </div>
-                )}
-                
-                {currentVideo.type === 'youtube' && !hasError ? (
-                  <>
-                    <div className="absolute inset-0 overflow-hidden">
-                      <iframe
-                        ref={iframeRef}
-                        src={`https://www.youtube-nocookie.com/embed/${extractYouTubeId(currentVideo.src)}?autoplay=1&mute=1&loop=1&playlist=${extractYouTubeId(currentVideo.src)}&controls=0&rel=0&showinfo=0&iv_load_policy=3&modestbranding=1&playsinline=1&disablekb=1&fs=0&enablejsapi=1&origin=${window.location.origin}`}
-                        className="absolute top-1/2 left-1/2 w-[122%] h-[122%]"
-                        frameBorder="0"
-                        allow="autoplay; encrypted-media"
-                        onLoad={() => setIsLoaded(true)}
-                        onError={() => setHasError(true)}
-                        title={currentVideo.title || `Video ${currentVideo.id}`}
-                        style={{
-                          transform: 'translate(-50%, -53%) scale(0.96)',
-                          transformOrigin: 'center',
-                          pointerEvents: 'none'
-                        }}
-                      />
-                      {isLoaded && isMuted && (
-                        <button
-                          type="button"
-                          onClick={unmuteVideo}
-                          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 bg-gradient-to-b from-white to-white/90 text-black rounded-full shadow-lg hover:from-white hover:to-white/80 p-4 focus:outline-none focus:ring-2 focus:ring-white/70"
-                          aria-label="Activar audio"
-                          title="Activar audio"
-                        >
-                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M11 5l-6 4H3v6h2l6 4V5z"></path>
-                            <path d="M19 7c.7 1.1 1 2.4 1 5s-.3 3.9-1 5" />
-                            <path d="M15 9.5c.4.7.6 1.5.6 2.5s-.2 1.8-.6 2.5" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </>
-                ) : currentVideo.type === 'cloudinary' ? (
-                  <>
-                    <AdvancedVideo
-                      ref={videoRef}
-                      cldVid={cldVideo}
-                      className="w-full h-full object-cover"
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      onLoadedData={() => setIsLoaded(true)}
-                      onError={() => setHasError(true)}
-                    />
-                    {isLoaded && isMuted && (
-                      <button
-                        type="button"
-                        onClick={unmuteVideo}
-                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 bg-gradient-to-b from-white to-white/90 text-black rounded-full shadow-lg hover:from-white hover:to-white/80 p-4 focus:outline-none focus:ring-2 focus:ring-white/70"
-                        aria-label="Activar audio"
-                        title="Activar audio"
-                      >
-                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <path d="M11 5l-6 4H3v6h2l6 4V5z"></path>
-                          <path d="M19 7c.7 1.1 1 2.4 1 5s-.3 3.9-1 5" />
-                          <path d="M15 9.5c.4.7.6 1.5.6 2.5s-.2 1.8-.6 2.5" />
-                        </svg>
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <video
-                      ref={videoRef}
-                      src={currentVideo.src}
-                      className="w-full h-full object-cover"
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      preload="auto"
-                      onLoadedData={() => {
-                         setIsLoaded(true);
-                         setHasError(false);
-                      }}
-                      onError={(e) => {
-                         console.error('Error loading video in player:', currentVideo.id, e.nativeEvent);
-                         if (videoRef.current && currentVideo.fallback && !videoRef.current.src.endsWith('.webm')) {
-                           videoRef.current.src = currentVideo.fallback.replace('.mp4', '.webm').replace('.mov', '.webm');
-                           videoRef.current.load();
-                         } else {
-                           setHasError(true);
-                         }
-                      }}
-                    />
-                    {isLoaded && isMuted && (
-                      <button
-                        type="button"
-                        onClick={unmuteVideo}
-                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 bg-gradient-to-b from-white to-white/90 text-black rounded-full shadow-lg hover:from-white hover:to-white/80 p-4 focus:outline-none focus:ring-2 focus:ring-white/70"
-                        aria-label="Activar audio"
-                        title="Activar audio"
-                      >
-                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <path d="M11 5l-6 4H3v6h2l6 4V5z"></path>
-                          <path d="M19 7c.7 1.1 1 2.4 1 5s-.3 3.9-1 5" />
-                          <path d="M15 9.5c.4.7.6 1.5.6 2.5s-.2 1.8-.6 2.5" />
-                        </svg>
-                      </button>
-                    )}
-                  </>
-                )}
-              </>
             )}
           </div>
+        ))}
+
+        {/* Centinela: al llegar aquí tras el último video, se cierra solo */}
+        <div
+          ref={sentinelRef}
+          className="flex h-full w-full snap-start items-center justify-center"
+        >
+          <p className="font-body text-white/60">Volviendo a la galería…</p>
         </div>
       </div>
     </div>

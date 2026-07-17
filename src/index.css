@@ -34,6 +34,50 @@
 }
 
 @layer components {
+  /* Animación de entrada usada por <Reveal>. El estado inicial sólo se aplica
+     dentro de la media query "no-preference": si el navegador no soporta CSS
+     o JS falla, el texto queda visible en vez de invisible para siempre. */
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .reveal-in {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* El subrayado del eslogan se dibuja de izquierda a derecha cuando su
+       <Reveal> padre entra en pantalla. Fuera de esta media query no existe:
+       con movimiento reducido el subrayado aparece completo y estático. */
+    .slogan-underline {
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s;
+    }
+
+    .reveal-in .slogan-underline {
+      transform: scaleX(1.05);
+    }
+  }
+
+  /* Quien pide menos movimiento no recibe animación alguna, ni las infinitas
+     (ecualizador, aurora, brillos). */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-equalize,
+    .animate-pulse-ring,
+    .animate-aurora,
+    .animate-aurora-slow,
+    .animate-shine,
+    .animate-float {
+      animation: none !important;
+    }
+  }
+
   body {
     @apply bg-white text-gray-800 dark:bg-gray-900 dark:text-white min-h-screen;
     background-attachment: fixed;
@@ -53,15 +97,28 @@
     @apply min-h-screen flex flex-col relative;
   }
 
-  .swiper-button-next,
-  .swiper-button-prev {
-    @apply text-white bg-black/50 hover:bg-black/70 rounded-full w-12 h-12 flex items-center justify-center transition-colors duration-300 !important;
-    margin-top: -24px !important;
+  /* Feed vertical del reproductor (experiencia tipo TikTok).
+     Se apoya en scroll-snap nativo: hereda el momentum del sistema y funciona
+     igual con rueda, trackpad y gesto táctil sin listeners de wheel. */
+  .feed-vertical {
+    scroll-snap-type: y mandatory;
+    /* overscroll-behavior evita que el scroll del feed arrastre a la página
+       de detrás al llegar a los extremos. */
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* El html tiene scroll-behavior: smooth; aquí lo neutralizamos para que
+       el posicionamiento inicial sea instantáneo y el snap no se pelee con él. */
+    scroll-behavior: auto;
   }
 
-  .swiper-button-next:after,
-  .swiper-button-prev:after {
-    @apply text-xl font-bold !important;
+  .feed-vertical::-webkit-scrollbar {
+    display: none;
+  }
+
+  .feed-vertical > * {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
   }
 
   .swiper-slide {
@@ -82,13 +139,5 @@
   .swiper-slide-shadow-left,
   .swiper-slide-shadow-right {
     border-radius: 36px !important;
-  }
-
-  .swiper-button-next {
-    right: 0 !important;
-  }
-
-  .swiper-button-prev {
-    left: 0 !important;
   }
 }

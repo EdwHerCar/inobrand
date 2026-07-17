@@ -1,82 +1,86 @@
+// Videos re-codificados a H.264 (compatible con todos los navegadores) y
+// servidos como estáticos desde el CDN de Vercel con caché inmutable (ver vercel.json).
+//
+// Cada video tiene dos variantes generadas con ffmpeg:
+//  - preview: 540x960, sin audio, ~1 MB — para autoplay en cuadrícula/carrusel
+//  - src:     720x1280, con audio, faststart — para el reproductor a pantalla completa
+//  - poster:  JPEG del primer frame — pintado instantáneo antes de cargar el video
+//
+// El orden del arreglo define el orden del carrusel.
+
+// Video de la sección "¡Listos para el lanzamiento!" (ServiceShowcase)
+export const launchVideo = {
+  id: 'inicial',
+  title: 'Video inicial',
+  src: '/videos/inicial-full.mp4',
+  poster: '/videos/inicial-poster.jpg'
+};
+
 export const videos = [
-    { 
-      id: 9, 
-      type: 'supabase', 
-      src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/61a0a456-fc50-4756-b398-a2710ea524ef.mp4',
-      fallback: '/videos/9.mp4',
-      title: 'Video Principal'
-    },
-    { 
-      id: 2, 
-      type: 'supabase', 
-      src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/Copia%20de%2010%20febrero.mp4', 
-      fallback: '/videos/2.mp4',
-      title: 'Video 2'
-    }, 
-    { 
-      id: 3, 
-      type: 'supabase', 
-      src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/Copia%20de%2022%20febrero.mp4',
-      fallback: '/videos/3.mp4',
-      title: 'Video 3'
-    },
-    { 
-      id: 4, 
-      type: 'supabase', 
-      src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/Copia%20de%207nov.mp4', 
-      fallback: '/videos/4.mp4',
-      title: 'Video 4'
-    },
   {
-    id: 5,
-    title: 'Transformación Digital',
-    description: 'De lo tradicional a lo digital. Caso de éxito.',
-    src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/Copia%20de%20copy_290C210F-B182-49C4-9282-73A223E812D2.mov',
-    fallback: '/videos/5.mp4',
-    type: 'vertical',
-    metrics: {
-      views: '75K',
-      likes: '3.2K',
-      comments: '128'
-    }
+    id: 9,
+    title: 'Video Principal',
+    src: '/videos/9-full.mp4',
+    preview: '/videos/9-preview.mp4',
+    poster: '/videos/9-poster.jpg'
+  },
+  {
+    id: 2,
+    title: 'Video 2',
+    src: '/videos/2-full.mp4',
+    preview: '/videos/2-preview.mp4',
+    poster: '/videos/2-poster.jpg'
+  },
+  {
+    id: 4,
+    title: 'Video 4',
+    src: '/videos/4-full.mp4',
+    preview: '/videos/4-preview.mp4',
+    poster: '/videos/4-poster.jpg'
   },
   {
     id: 6,
     title: 'Contenido Viral',
     description: 'Cómo crear contenido que conecta y se comparte.',
-    src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/Copia%20de%20promofinal2.mp4',
-    fallback: '/videos/6.mp4',
-    type: 'vertical',
-    metrics: {
-      views: '110K',
-      likes: '5.5K',
-      comments: '342'
-    }
+    src: '/videos/6-full.mp4',
+    preview: '/videos/6-preview.mp4',
+    poster: '/videos/6-poster.jpg'
+  },
+  {
+    id: 3,
+    title: 'Video 3',
+    src: '/videos/3-full.mp4',
+    preview: '/videos/3-preview.mp4',
+    poster: '/videos/3-poster.jpg'
+  },
+  {
+    id: 5,
+    title: 'Transformación Digital',
+    description: 'De lo tradicional a lo digital. Caso de éxito.',
+    src: '/videos/5-full.mp4',
+    preview: '/videos/5-preview.mp4',
+    poster: '/videos/5-poster.jpg'
+  },
+  {
+    id: 10,
+    title: 'RT Lff',
+    src: '/videos/10-full.mp4',
+    preview: '/videos/10-preview.mp4',
+    poster: '/videos/10-poster.jpg'
   },
   {
     id: 7,
-    title: 'Estrategia de Marca',
-    description: 'Construyendo marcas que perduran en el tiempo.',
-    src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/Copia%20de%20videoapertura1.mov',
-    fallback: '/videos/7.mp4',
-    type: 'vertical',
-    metrics: {
-      views: '88K',
-      likes: '4.1K',
-      comments: '156'
-    }
+    title: 'Amalia',
+    src: '/videos/7-full.mp4',
+    preview: '/videos/7-preview.mp4',
+    poster: '/videos/7-poster.jpg'
   },
   {
     id: 8,
     title: 'Marketing de Contenidos',
     description: 'El poder del contenido para atraer clientes.',
-    src: 'https://zyyipcqfhosrysakgyok.supabase.co/storage/v1/object/public/Inobrand/copy_7F35694D-CBE5-4EAF-B9C0-A4F7788BF21E.mov',
-    fallback: '/videos/8.mp4',
-    type: 'vertical',
-    metrics: {
-      views: '65K',
-      likes: '2.8K',
-      comments: '94'
-    }
+    src: '/videos/8-full.mp4',
+    preview: '/videos/8-preview.mp4',
+    poster: '/videos/8-poster.jpg'
   }
 ];

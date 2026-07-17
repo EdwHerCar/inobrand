@@ -52,31 +52,43 @@ const Hero = () => {
 
   const handleScrollToSlogan = () => {
     const sloganSection = document.getElementById('slogan-section');
-    if (sloganSection) {
-      const start = window.pageYOffset;
-      const end = sloganSection.getBoundingClientRect().top + window.pageYOffset;
-      const duration = 1200; // Optimized duration for smoother experience
-      const startTime = performance.now();
+    if (!sloganSection) return;
 
-      function animate(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Smooth easing function for consistent movement
-        const easeInOutCubic = t => t < 0.5 
-          ? 4 * t * t * t 
-          : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-        const currentPosition = start + (end - start) * easeInOutCubic(progress);
-        window.scrollTo(0, currentPosition);
-
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        }
-      }
-
-      requestAnimationFrame(animate);
+    // Con movimiento reducido, saltar directo: nada de recorrido animado.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      sloganSection.scrollIntoView({ behavior: 'auto', block: 'start' });
+      return;
     }
+
+    const start = window.pageYOffset;
+    const end = sloganSection.getBoundingClientRect().top + window.pageYOffset;
+    const duration = 1600;
+    const startTime = performance.now();
+
+    function animate(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      const easeInOutCubic = t => t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      const currentPosition = start + (end - start) * easeInOutCubic(progress);
+
+      // `behavior: 'instant'` es imprescindible: index.css define
+      // `html { scroll-behavior: smooth }`, y la forma window.scrollTo(x, y)
+      // la respeta. Eso hacía que cada fotograma lanzara su propia animación
+      // suave del navegador, interrumpida 16 ms después por la siguiente —
+      // el scroll nativo peleaba con este bucle y el salto salía a tirones.
+      // Aquí cada paso debe ser inmediato; la suavidad la da el easing.
+      window.scrollTo({ top: currentPosition, behavior: 'instant' });
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    }
+
+    requestAnimationFrame(animate);
   };
 
   return (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import Hero from './components/Hero';
@@ -47,6 +47,30 @@ const ErrorFallback = ({ error, resetErrorBoundary }) => {
 const AppContent = () => {
   const location = useLocation();
   const isVideoPlayerPage = location.pathname.startsWith('/video/');
+
+  // Al navegar a una URL con hash (p. ej. al cerrar el reproductor con
+  // /#video-gallery), React Router no hace scroll por sí solo en una SPA.
+  // Sondeamos porque la sección destino puede tardar en montarse: el
+  // carrusel está al final de la página y es pesado.
+  useEffect(() => {
+    if (!location.hash) return;
+    const id = location.hash.slice(1);
+    let intentos = 0;
+    let cancelado = false;
+
+    const irAlDestino = () => {
+      if (cancelado) return;
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (intentos++ < 30) {
+        setTimeout(irAlDestino, 50);
+      }
+    };
+    irAlDestino();
+
+    return () => { cancelado = true; };
+  }, [location.pathname, location.hash]);
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-light-bg dark:bg-dark-bg">

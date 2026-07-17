@@ -2,15 +2,57 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css/effect-coverflow';
-import { Navigation, Autoplay, EffectCoverflow, Mousewheel } from 'swiper/modules';
+import { Autoplay, EffectCoverflow, Mousewheel } from 'swiper/modules';
 import 'swiper/css';
-import 'swiper/css/navigation';
 import { FaFacebook, FaInstagram, FaTiktok } from 'react-icons/fa';
 import { videos } from '../data/videos';
+import Reveal from './Reveal';
 
 const VideoCarousel = () => {
   const navigate = useNavigate();
   const [deviceType, setDeviceType] = useState('desktop');
+  const swiperRef = useRef(null);
+  const yaCentradoEnPrimero = useRef(false);
+
+  // Centrar el carrusel en el primer video (realIndex 0) la primera vez que
+  // entra en pantalla. Se hace aquí y no en onSwiper porque los mockups y los
+  // videos cargan de forma diferida y disparan un update() de Swiper que
+  // reposiciona; al ser visible ya está todo cargado y slideToLoop(0) prende
+  // de forma permanente. El carrusel está muy abajo, así que esto ocurre antes
+  // de que el usuario llegue a verlo.
+  useEffect(() => {
+    const cont = document.getElementById('video-gallery');
+    if (!cont) return;
+
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !yaCentradoEnPrimero.current && swiperRef.current) {
+          yaCentradoEnPrimero.current = true;
+          swiperRef.current.slideToLoop(0, 0);
+        }
+      },
+      { threshold: 0.2 }
+    );
+    obs.observe(cont);
+    return () => obs.disconnect();
+  }, []);
+  // Los navegadores bloquean el audio hasta que el usuario interactúa con la
+  // página (el scroll no cuenta). En cuanto haya un gesto —por ejemplo el
+  // botón "Despeguemos" del Hero— el carrusel puede sonar.
+  const [audioHabilitado, setAudioHabilitado] = useState(false);
+
+  useEffect(() => {
+    const activar = () => setAudioHabilitado(true);
+
+    if (navigator.userActivation?.hasBeenActive) {
+      setAudioHabilitado(true);
+      return;
+    }
+
+    const eventos = ['pointerdown', 'keydown', 'touchstart'];
+    eventos.forEach(e => window.addEventListener(e, activar, { once: true, passive: true }));
+    return () => eventos.forEach(e => window.removeEventListener(e, activar));
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -36,6 +78,7 @@ const VideoCarousel = () => {
     const videoRef = useRef(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
+    const [enPantalla, setEnPantalla] = useState(false);
 
     useEffect(() => {
       // Safari sometimes needs the muted property set on the DOM node directly
@@ -43,22 +86,62 @@ const VideoCarousel = () => {
         videoRef.current.defaultMuted = true;
         videoRef.current.muted = true;
       }
-      
-      // Intentar reproducir automáticamente si se pausa (doble seguridad)
-      if (videoRef.current && isLoaded) {
-        const playPromise = videoRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(e => console.warn('Error autoplay:', e));
-        }
-      }
-    }, [isLoaded, isActive]);
+    }, []);
 
-    const handleClick = (e) => {
-      if (!isActive && !isStacked) {
-        // Prevent navigation if slide is not active (Swiper will handle sliding to it if slideToClickedSlide is true)
+    // La visibilidad manda: nada se reproduce ni suena fuera de pantalla.
+    useEffect(() => {
+      const vidEl = videoRef.current;
+      if (!vidEl) return;
+
+      const observer = new IntersectionObserver(
+        ([entry]) => setEnPantalla(entry.isIntersecting),
+        { threshold: 0.25 }
+      );
+      observer.observe(vidEl);
+      return () => observer.disconnect();
+    }, []);
+
+    // Un único sitio decide reproducción y audio, en este orden:
+    // fuera de pantalla -> pausado y en silencio, pase lo que pase.
+    // Sólo suena el slide activo (nueve a la vez sería ruido) y sólo si el
+    // usuario ya interactuó con la página (política de autoplay).
+    useEffect(() => {
+      const vidEl = videoRef.current;
+      if (!vidEl || !isLoaded) return;
+
+      if (!enPantalla) {
+        vidEl.pause();
+        vidEl.muted = true;
         return;
       }
-      handleVideoClick(video);
+
+      const debeSonar = isActive && !isStacked && audioHabilitado;
+      vidEl.muted = !debeSonar;
+
+      const p = vidEl.play();
+      if (p) {
+        p.catch(() => {
+          // Rechazado por la política de autoplay: recuperar en silencio.
+          vidEl.muted = true;
+          vidEl.play().catch(() => {});
+        });
+      }
+    }, [enPantalla, isActive, isStacked, isLoaded, audioHabilitado]);
+
+    const handleClick = (e) => {
+      // En móvil (apilado) cada tarjeta abre su video directamente.
+      if (isStacked) {
+        handleVideoClick(video);
+        return;
+      }
+      // En escritorio sólo abre el reproductor el video CENTRADO. Nos fiamos
+      // de la clase real del DOM (.swiper-slide-active) y no de la prop
+      // isActive, que con loop puede llegar desfasada. Un clic en un lateral
+      // no hace nada aquí: Swiper lo desliza al centro por slideToClickedSlide.
+      const slideEl = e.currentTarget.closest('.swiper-slide');
+      if (slideEl && slideEl.classList.contains('swiper-slide-active')) {
+        handleVideoClick(video);
+      }
     };
 
     const widthClass = isStacked 
@@ -76,31 +159,23 @@ const VideoCarousel = () => {
               {/* Video Content */}
               <div className="absolute inset-0 bg-gray-800 z-0 animate-pulse" />
               
-              {/* Only render video if we have a source */}
-              {(video.src || video.fallback) && (
-                <video 
+              {video.preview && (
+                <video
                   ref={videoRef}
-                  src={video.src}
+                  src={video.preview}
+                  poster={video.poster}
                   className={`absolute inset-0 w-full h-full object-cover z-10 transition-opacity duration-500 ${hasError ? 'opacity-0' : 'opacity-100'}`}
-                  autoPlay
                   muted
                   loop
                   playsInline
+                  preload="metadata"
                   onLoadedData={() => {
                     setIsLoaded(true);
                     setHasError(false);
                   }}
                   onError={(e) => {
                     console.error('Video error in carousel:', video.id, e.nativeEvent);
-                    // Como el formato original falla, forzamos el uso del video de respaldo en webm
-                    if (videoRef.current && video.fallback && !videoRef.current.src.endsWith('.webm')) {
-                      // Vamos a asumir que generamos una versión .webm del fallback 
-                      // (esto se arreglará luego convirtiendo los archivos)
-                      videoRef.current.src = video.fallback.replace('.mp4', '.webm').replace('.mov', '.webm');
-                      videoRef.current.load();
-                    } else {
-                      setHasError(true);
-                    }
+                    setHasError(true);
                   }}
                 />
               )}
@@ -136,15 +211,15 @@ const VideoCarousel = () => {
   };
 
   return (
-    <section className="w-full py-16 overflow-hidden bg-light-bg dark:bg-dark-bg">
+    <section id="video-gallery" className="w-full py-16 overflow-hidden bg-light-bg dark:bg-dark-bg">
       <div className="container mx-auto px-4 mb-12">
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-light-text dark:text-white">
+        <Reveal as="h2" className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-light-text dark:text-white">
           Nuestro Trabajo
-        </h2>
-        <p className="text-3xl text-light-muted dark:text-dark-muted max-w-2xl mx-auto mb-6">
+        </Reveal>
+        <Reveal as="p" delay={100} className="text-3xl text-light-muted dark:text-dark-muted max-w-2xl mx-auto mb-6">
           Descubre cómo transformamos marcas a través del poder del marketing digital
-        </p>  
-        <div className="flex justify-center gap-6 mb-8">
+        </Reveal>
+        <Reveal delay={200} className="flex justify-center gap-6 mb-8">
           <a 
             href="https://www.facebook.com/share/1BJ78sVjej/?mibextid=wwXIfr" 
             target="_blank" 
@@ -167,7 +242,7 @@ const VideoCarousel = () => {
           >
             <FaTiktok />
           </a>
-        </div>
+        </Reveal>
       </div>
       
       <div className="w-full relative mx-auto overflow-hidden py-16">
@@ -183,7 +258,9 @@ const VideoCarousel = () => {
             grabCursor={true}
             centeredSlides={true}
             slidesPerView={'auto'}
+            initialSlide={0}
             slideToClickedSlide={true}
+            onSwiper={(swiper) => { swiperRef.current = swiper; }}
             mousewheel={{
               forceToAxis: true,
               sensitivity: 1,
@@ -203,8 +280,7 @@ const VideoCarousel = () => {
               disableOnInteraction: false,
               pauseOnMouseEnter: true,
             }}
-            navigation={deviceType !== 'mobile'}
-            modules={[EffectCoverflow, Navigation, Autoplay, Mousewheel]}
+            modules={[EffectCoverflow, Autoplay, Mousewheel]}
             className="w-full !py-12"
           >
             {videos.map((video) => (

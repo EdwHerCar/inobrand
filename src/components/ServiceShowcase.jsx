@@ -1,10 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useWhatsAppButton } from '../context/WhatsAppButtonContext';
-import { videos } from '../data/videos';
+import { launchVideo } from '../data/videos';
+import Reveal from './Reveal';
+import Typewriter from './Typewriter';
 
 const ServiceShowcase = () => {
   const sectionRef = useRef(null);
   const videoRef = useRef(null);
+  const hasInteractedRef = useRef(false);
+  const autoUnmuteTriedRef = useRef(false);
   const { setIsServiceShowcaseVisible } = useWhatsAppButton();
   const [isButtonFlashing, setIsButtonFlashing] = useState(false);
   const [isVideoVisible, setIsVideoVisible] = useState(false);
@@ -12,18 +16,20 @@ const ServiceShowcase = () => {
   const [videoError, setVideoError] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
 
-  // Usaremos el primer video vertical disponible en Supabase
-  const displayVideo = videos.find(v => v.type === 'vertical') || videos[0];
+  // Video de lanzamiento (versión completa con audio, servida localmente)
+  const displayVideo = launchVideo;
 
   useEffect(() => {
     // Detectar tipo de dispositivo para ajustar configuración
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    // Video visibility observer options
+    // Video visibility observer options.
+    // La sección es más alta que el viewport (~1270px vs ~780px), así que su
+    // ratio de intersección nunca llega a 0.5: el threshold debe ser bajo.
     const videoOptions = {
       root: null,
       rootMargin: isMobile ? '100px' : '50px',
-      threshold: isMobile ? 0.3 : 0.5,
+      threshold: 0.15,
     };
     
     // Eliminamos control directo de reproducción: el iframe de YouTube se autogestiona
@@ -105,6 +111,65 @@ const ServiceShowcase = () => {
     }
   }, []);
 
+  // Los navegadores sólo permiten reproducir con sonido si el usuario ya
+  // interactuó con la página (hacer scroll NO cuenta como interacción).
+  // Registramos cualquier gesto para saber si podemos intentarlo.
+  useEffect(() => {
+    const marcar = () => { hasInteractedRef.current = true; };
+    const eventos = ['pointerdown', 'keydown', 'touchstart'];
+    eventos.forEach(e =>
+      window.addEventListener(e, marcar, { once: true, passive: true })
+    );
+    return () => eventos.forEach(e => window.removeEventListener(e, marcar));
+  }, []);
+
+  // Al llegar a la sección, intentar reproducir con volumen activado.
+  // Si el navegador lo rechaza (sin gesto previo), se vuelve a silencio y
+  // queda el botón manual: nunca se pierde la reproducción.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !videoLoaded || !isVideoVisible || autoUnmuteTriedRef.current) return;
+
+    const puedeSonar = navigator.userActivation?.hasBeenActive ?? hasInteractedRef.current;
+    if (!puedeSonar) return;
+
+    autoUnmuteTriedRef.current = true;
+    let cancelado = false;
+
+    (async () => {
+      v.muted = false;
+      try {
+        await v.play();
+        if (!cancelado) setIsMuted(false);
+      } catch {
+        // Rechazado por la política de autoplay: recuperar el silencio.
+        v.muted = true;
+        if (!cancelado) setIsMuted(true);
+        v.play().catch(() => {});
+      }
+    })();
+
+    return () => { cancelado = true; };
+  }, [isVideoVisible, videoLoaded]);
+
+  // El evento loadeddata puede dispararse antes de que React monte los handlers
+  // (p. ej. con el video en caché o el doble montaje de StrictMode); comprobar
+  // readyState directamente y escuchar el evento nativo como respaldo.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const markLoaded = () => {
+      setVideoLoaded(true);
+      setVideoError(false);
+    };
+    if (v.readyState >= 2) {
+      markLoaded();
+      return;
+    }
+    v.addEventListener('loadeddata', markLoaded);
+    return () => v.removeEventListener('loadeddata', markLoaded);
+  }, []);
+
   const handleWhatsAppClick = () => {
     window.open('https://wa.me/2411984848', '_blank');
   };
@@ -136,9 +201,12 @@ const ServiceShowcase = () => {
   return (
     <div ref={sectionRef} className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 mt-8 sm:mt-12 lg:mt-16 min-h-[600px] sm:min-h-[700px] lg:min-h-[800px] flex items-center">
       <div className="w-full">
-        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-center mb-8 sm:mb-12 lg:mb-16 text-light-text dark:text-white leading-tight">
+        <Reveal
+          as="h2"
+          className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-center mb-8 sm:mb-12 lg:mb-16 text-light-text dark:text-white leading-tight"
+        >
           ¡Listos para el lanzamiento!
-        </h2>
+        </Reveal>
         <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12 xl:gap-16">
           {/* Video mockup container */}
           <div className="w-full lg:w-1/2 flex justify-center order-1 lg:order-1">
@@ -176,6 +244,7 @@ const ServiceShowcase = () => {
                     <video
                       ref={videoRef}
                       src={displayVideo.src}
+                      poster={displayVideo.poster}
                       className="absolute inset-0 w-full h-full object-cover z-10"
                       autoPlay
                       muted
@@ -184,12 +253,7 @@ const ServiceShowcase = () => {
                       onLoadedData={handleIframeLoad}
                       onError={(e) => {
                         console.error('Error loading video in ServiceShowcase:', displayVideo.id, e.nativeEvent);
-                        if (videoRef.current && displayVideo.fallback && !videoRef.current.src.endsWith('.webm')) {
-                           videoRef.current.src = displayVideo.fallback.replace('.mp4', '.webm').replace('.mov', '.webm');
-                           videoRef.current.load();
-                        } else {
-                           handleIframeError();
-                        }
+                        handleIframeError();
                       }}
                     />
                     {videoLoaded && !videoError && isMuted && (
@@ -231,22 +295,31 @@ const ServiceShowcase = () => {
           <div className="w-full lg:w-1/2 flex flex-col justify-center order-2 lg:order-2">
             <ul className="space-y-6 sm:space-y-8 lg:space-y-10 xl:space-y-12">
               {services.map((service, index) => (
-                <li
-                  key={index}
+                <Reveal
+                  as="li"
+                  key={service.title}
+                  // Cada punto entra escalonado; el tecleo del título arranca
+                  // justo después de que su línea haya aparecido.
+                  delay={index * 220}
                   className="transform hover:-translate-y-1 transition-transform duration-300"
                 >
                   <div className="flex items-start space-x-3 sm:space-x-4">
                     <div className="flex-shrink-0 w-2 h-2 sm:w-2.5 sm:h-2.5 mt-2 sm:mt-2.5 rounded-full bg-gradient-to-r from-primary to-secondary"></div>
                     <div className="flex flex-col">
-                      <h3 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-4xl font-semibold text-light-text dark:text-white mb-2 leading-tight">
-                        {service.title}
-                      </h3>
+                      <Typewriter
+                        as="h3"
+                        text={service.title}
+                        startDelay={index * 220 + 250}
+                        speed={45}
+                        className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-4xl font-semibold text-light-text dark:text-white mb-2 leading-tight"
+                        cursorClassName="text-secondary"
+                      />
                       <p className="text-base sm:text-lg md:text-lg lg:text-xl xl:text-xl text-light-muted dark:text-dark-muted leading-relaxed">
                         {service.description}
                       </p>
                     </div>
                   </div>
-                </li>
+                </Reveal>
               ))}
             </ul>
           </div>
